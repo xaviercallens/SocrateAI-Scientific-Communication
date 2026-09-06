@@ -276,3 +276,112 @@ artifact claim; it caught the tag and the job count independently.
 `extendedchars` machinery transposes glyphs it does not have literate entries for — visibly, in the
 PDF, while the prose renders fine. Verify by *rendering the page*, since `pdftotext` order and
 visual order can each mislead alone.
+
+---
+
+# Run 2 — publication, archival, and the second language *(2026-09-06)*
+
+Run 1 produced the artifact. Run 2 published it: GitHub merge and release, a HuggingFace mirror, a
+Zenodo DOI, and a French translation for HAL. Every lesson below is from that publication surface,
+which turned out to have failure modes the formalization work did not.
+
+## LL-14 — An irreversible action defaulted to the wrong target *(2026-09-06)*
+
+`scripts/zenodo_deposit.py --publish` minted a DOI. It minted it for the **wrong deposition**. The
+script's `main()` always ran its create-and-upload path first, so `--publish` created a *second*
+deposition, uploaded to it, and published that one — while the draft the operator had actually
+reviewed sat unpublished forever. Both papers had already been typeset citing the reviewed draft's
+*reserved* DOI, which is never minted and resolves to nothing. So the published PDFs cited a dead
+DOI, and a Zenodo record cannot be deleted once published.
+
+The recovery was Zenodo's own versioning: cite the **concept DOI**, which is stable and always
+resolves to the newest version, then publish a v2 carrying corrected PDFs. Cost: one permanent
+duplicate-looking v1 in the version history, and a `version`/`notes` field explaining it.
+
+**Rule.** An irreversible outward action must name its target explicitly; it may never fall back to
+a default or to "create one for me". `--publish` now *refuses* without `--deposition <id>`, and
+refuses to republish a published record, pointing at the `newversion` action instead. Both refusals
+are tested. Generalize: any tool in this programme that mints a DOI, pushes a tag, sends mail, or
+posts to a public index takes its target as a required argument.
+
+**Rule.** Papers cite the **concept DOI**, never a version DOI and never a reserved one. A reserved
+DOI is a promise, not a resolvable identifier, and the gap between staging and publishing is exactly
+where the promise breaks.
+
+## LL-15 — The credential was "set" and was not there *(2026-09-06)*
+
+Three times a token was reported as exported and three times it was invisible to the agent. Not a
+permissions problem: Claude Code's Bash shells inherit the environment captured at session start,
+and shell state does not persist between calls, so a mid-session `export` — including one typed as
+`! export ...` — reaches nothing. A names-only dump of all 128 visible variables settled it in one
+call after two wasted round-trips of guessing at variable names.
+
+What worked was a **file**: the HuggingFace token was read from `~/.cache/huggingface/token` and
+the Zenodo token from `~/.config/zenodo/token`, `chmod 600`.
+
+**Rule.** When a credential is reported present but is not visible, check the environment **once**,
+names only, then ask for a token file. Never iterate on variable-name guesses. Publication scripts
+read `$SERVICE_TOKEN` first and fall back to the file, so they work under both regimes.
+
+**Rule.** Secrets pasted into chat are written to the session transcript in plaintext at
+`~/.claude/projects/<project>/<session>.jsonl`. Three were exposed this way in one session (Gemini,
+HuggingFace, Zenodo). Flag immediately, never echo, never commit, and recommend rotation — after
+any in-flight operation that depends on the token, not before.
+
+## LL-16 — `pdftotext` passed while the page was visibly broken *(2026-09-06)*
+
+LL-13 already said render the page. This run produced a *second, different* defect that text
+extraction could not see: a 90-character Lean signature line overflowed the listing frame, printing
+`:=` outside the rule. Extraction returns the characters in the right order, so it reported clean.
+Only the rendered page showed the overflow. The same render also made me *misread* `⟩` as `)` —
+DejaVu Sans Mono draws U+27E9 shallowly — which extraction then corrected.
+
+**Rule.** Text extraction and rendering catch **disjoint** defect classes and each produces false
+confidence alone. Extraction catches transposition and substitution; rendering catches overflow,
+clipping, and spacing. Run both, and settle any disagreement by **codepoint** — `hex(ord(c))` — not
+by eye. A pixel is not evidence about which character is present.
+
+**Rule (fidelity gate).** Every code line in a paper is checked twice mechanically: it must appear
+verbatim in the rendered PDF text, **and** it must exist verbatim in the Lean source. The second
+check is what makes "reproduced verbatim from the compiled source" a claim rather than a hope; it
+is 20 lines of Python and it ran green on 14/14 lines in each language.
+
+## LL-17 — I reported a blocker that was a unit error *(2026-09-06)*
+
+`awk 'length($0)>100'` flagged seven lines as exceeding Mathlib's 100-character limit, and I
+reported a Mathlib PR blocker. `awk`'s `length()` was counting **bytes**; Lean source is dense with
+multi-byte Unicode (`ℤ`, `γ`, `⟩`). At character count, **zero** lines exceed 100 and the source was
+already compliant. I nearly rewrote seven correct lines.
+
+**Rule.** Before reporting a threshold violation, state the unit and verify the measurement counts
+in it. For any check on Lean source use Python with an explicit `encoding='utf-8'` and `len(str)`;
+`awk`, `wc -c`, and shell `${#var}` count bytes and will systematically over-report on Lean.
+
+## LL-18 — The forge refused, and the refusal was right *(2026-09-06)*
+
+Pushing `master` failed: a pre-existing commit added `.github/workflows/ci.yml` and the PAT lacked
+`workflow` scope. Two wrong reactions were available — ask for a broader token, or force-push past
+it. The correct one was to route around: the feature branch contained no workflow file, so a PR
+merged it cleanly, and the CI commit — *not mine* — was preserved on a `ci-workflow` branch rather
+than dropped. A later `git push -f` was denied by the permission layer, correctly.
+
+**Rule.** A forge refusal is a design constraint, not an obstacle. Prefer the narrower path (PR
+instead of direct push) over the broader credential. Never discard another author's commit to
+unblock your own; branch it. This is the `quarantine, don't delete` rule applied to git history.
+
+## LL-19 — The prior-art gate ran *before* the work this time *(2026-09-06)*
+
+Run 1's most expensive lesson was that novelty was checked after the paper was written. For run 3
+the gate ran first, and it changed the plan: `ALQ-01` (Atkin–Lehner family) is **not** a paper,
+because `atkinLehnerLin` in the FLT artifact already covers it — it is Mathlib PR content. `ETA-01`
+(Ligozat's criterion) **is** a paper: Mathlib has `DedekindEta.lean` (20 declarations, η and its
+log-derivative) but zero occurrences of `EtaQuotient` or `Ligozat`; the FLT artifact's `Ligozat*`
+hits are *namespace names* (`LigozatUnitEngine`, `LigozatUnitAL`) on proof-internal modular-unit
+machinery, not the modularity criterion; and a GitHub-wide `language:lean` search returns 0 for
+`Ligozat` and nothing relevant for eta-quotients.
+
+**Rule.** The prior-art check is **gate zero of topic selection**, not a section of the finished
+paper. Its output decides *whether the paper exists*, and it costs a few searches against: Mathlib
+at the pinned commit, every Lean development in the intended bibliography, and a GitHub-wide
+`language:lean` search. Record the corpus and the date; coverage is evidence, never proof.
+Unchecked corpora — Lean Zulip, mathlib4 open PRs, other proof assistants — are named as unchecked.
