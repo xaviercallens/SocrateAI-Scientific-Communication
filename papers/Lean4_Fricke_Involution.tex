@@ -67,7 +67,8 @@
   Xavier Callens\thanks{Corresponding author: \texttt{callensxavier@gmail.com}} \\
   \small SocrateAI Research Initiative
 }
-\date{\today}
+\date{\today\\[0.6em]
+  \small Archived at Zenodo: \href{https://doi.org/10.5281/zenodo.22541930}{\texttt{10.5281/zenodo.22541930}}}
 
 \begin{document}
 \maketitle
@@ -256,7 +257,7 @@ element, its determinant condition discharged by \lean{linear_combination} again
 $\det \gamma = 1$:
 
 \begin{figure}[h]
-\begin{Verbatim}[frame=single,fontsize=\small,samepage=true]
+\begin{Verbatim}[frame=single,fontsize=\footnotesize,samepage=true]
 def frickeConj {N : ℕ} (γ : SL(2, ℤ)) (c' : ℤ) (hc : γ.1 1 0 = (N : ℤ) * c') : SL(2, ℤ) :=
   ⟨!![γ.1 1 1, -c'; -(N : ℤ) * γ.1 0 1, γ.1 0 0], by
     have hdet := γ.2
@@ -367,7 +368,7 @@ no project-local axioms. The axiom footprint of each theorem, obtained by
 the three standard axioms of Lean's logic. Following the Fermat's Last Theorem
 artifact~\cite{FLT2026}, the footprint is not merely reported but \emph{enforced}: a
 \lean{FinalCheck} module places a \texttt{\#guard\_msgs in \#print axioms} guard on each of the
-eight headline theorems inside the default build target, so any widening of the axiom set is
+sixteen headline theorems inside the default build target, so any widening of the axiom set is
 a compile error, and a negative control (a guard asserting a deliberately wrong footprint)
 is kept outside the build and verified to fail. The development is tracked as a
 statement-dependency graph (\lean{dag/theorems.jsonl}, with a human-readable map in
@@ -378,13 +379,21 @@ in the terminology we adopt throughout the SocrateAI programme, (C1)--(C7) are
 \emph{formal} results; the surrounding exposition is not.
 
 \paragraph{Artifact.}
+Archived at Zenodo, \href{https://doi.org/10.5281/zenodo.22541930}{\texttt{doi:10.5281/zenodo.22541930}},
+which is the citable version of record for this note and its sources.
 Repository \url{https://github.com/xaviercallens/SocrateAI-Lean-Lib} (tag
 \texttt{fricke-v1}); module
 \texttt{Lean/SocrateAI/ModularForms/\{FrickeInvolution, FrickeSlash, FrickeModular, FrickeComposite\}.lean},
 with the axiom guards in \texttt{Lean/SocrateAI/FinalCheck.lean};
-toolchain \texttt{leanprover/lean4:v4.32.2};
+a mirror with a dataset card is at
+\url{https://huggingface.co/datasets/callensxavier/socrateai-fricke-involution}.
+Toolchain \texttt{leanprover/lean4:v4.32.2};
 Mathlib pinned at commit \texttt{905b9581} (2026-07-28);
-\texttt{lake build SocrateAI} completes in 2346 jobs (including the axiom-guard module).
+\texttt{lake build SocrateAI} completes in 3053 jobs (including the axiom-guard module).
+The build configuration is \emph{not} distributed: our \texttt{lakefile.lean} hard-codes absolute
+paths into a local Mathlib package pool, so the artifact is not yet buildable by a third party
+without supplying their own Mathlib at the pinned commit. A portable lakefile is outstanding work,
+and we flag it as the main obstacle to independent replication.
 The four modules total 27 declarations in 291 lines and import only
 \lean{Mathlib.NumberTheory.ModularForms.SlashActions},
 \lean{Mathlib.NumberTheory.ModularForms.CongruenceSubgroups},
