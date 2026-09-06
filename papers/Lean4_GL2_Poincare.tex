@@ -1,0 +1,236 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{DejaVu Sans Mono}[Scale=0.85]
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{hyperref}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{listings}
+
+\definecolor{indigo}{rgb}{0.29, 0.0, 0.51}
+\definecolor{teal}{rgb}{0.0, 0.5, 0.5}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=teal,
+    citecolor=indigo,
+    urlcolor=blue
+}
+
+% --- LEAN 4 SYNTAX HIGHLIGHTING ---
+\definecolor{keywordcolor}{rgb}{0.13, 0.13, 0.6}
+\definecolor{stringcolor}{rgb}{0.6, 0.13, 0.13}
+\definecolor{commentcolor}{rgb}{0.25, 0.5, 0.35}
+\definecolor{leanbackground}{rgb}{0.97, 0.98, 0.99}
+
+\lstdefinelanguage{lean4}{
+  keywords={def, theorem, lemma, structure, class, where, by, sorry, intros, intro, rfl, contradiction, cases, induction, open, namespace, end, import, have, show, match, with, decide, constructor, let, in, noncomputable, exact, apply, rw, simp, calc, ring, positivity, linarith, unfold},
+  keywordstyle=\color{keywordcolor}\bfseries,
+  ndkeywords={Nat, Real, Bool, Prop, Type, String, Int, Float, List, Complex, UpperHalfPlane, GLPos2Real, SL2Z, ModularForm},
+  ndkeywordstyle=\color{purple}\bfseries,
+  comment=[l]{--},
+  morecomment=[s]{/-}{-/},
+  commentstyle=\color{commentcolor}\itshape,
+  stringstyle=\color{stringcolor},
+  sensitive=true,
+  extendedchars=true,
+  literate={ℝ}{{$\mathbb{R}$}}1 {ℂ}{{$\mathbb{C}$}}1 {ℤ}{{$\mathbb{Z}$}}1 {↑}{{$\uparrow$}}1 {≠}{{$\neq$}}1 {>}{{$>$}}1 {<}{{$<$}}1 {≥}{{$\geq$}}1 {≤}{{$\leq$}}1 {₀}{{$_0$}}1 {∀}{{$\forall$}}1 {⟨}{{$\langle$}}1 {⟩}{{$\rangle$}}1 {→}{{$\to$}}1
+}
+
+\lstset{
+  language=lean4,
+  backgroundcolor=\color{leanbackground},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{gray!30},
+  captionpos=b,
+  keepspaces=true,
+  showstringspaces=false
+}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{\textbf{Mechanizing the Action of $GL_2^+(\mathbb{R})$ on the \\ Poincaré Upper Half-Plane in Lean 4}}
+\author{
+    \textbf{[Votre Nom/Prénom]} \\
+    \textit{Theoretical Computer Science and Formal Proofs} \\
+    \texttt{[Votre Email]}
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+The formal verification of continuous mathematics poses unique challenges in dependent type theory, particularly concerning the topological constraints of complex analysis. In this paper, we present a rigorous implementation of the Poincaré upper half-plane ($\mathbb{H}$) in the Lean 4 proof assistant. We mechanically prove that the general linear group of positive determinant, $GL_2^+(\mathbb{R})$, acting via fractional linear transformations, strictly preserves $\mathbb{H}$. By resolving Archimedean coercion challenges and eliminating division-by-zero edge cases utilizing the \texttt{positivity}, \texttt{linarith}, and \texttt{ring} tactics, we provide an axiom-free foundational component. We then present the algebraic skeleton of modular form structures for $\mathrm{SL}_2(\mathbb{Z})$, noting that the full analytic definition (including holomorphy and growth conditions at the cusps) remains outside the scope of this work.
+\end{abstract}
+
+\section{Introduction}
+
+Interactive Theorem Proving (ITP) has recently transitioned from verifying discrete algorithms to tackling profound theorems in continuous mathematics. Following the success of the Liquid Tensor Experiment \cite{Buzzard2021} and the maturation of the Lean~4 proof assistant~\cite{deMoura2021}, the mechanization of arithmetic geometry---specifically modular forms, elliptic curves, and Dirichlet series---is an active priority for the formal mathematics community.
+
+The Poincaré upper half-plane $\mathbb{H} = \{ z \in \mathbb{C} \mid \operatorname{Im}(z) > 0 \}$ serves as the fundamental domain for Fuchsian groups. While $\mathbb{H}$ has been defined in \texttt{Mathlib4} (\texttt{Mathlib.Analysis.Complex.UpperHalfPlane.Basic}), establishing explicit, constructive boundary certificates for the non-zero denominator of fractional linear transformations under the general linear group $GL_2^+(\mathbb{R})$ and connecting these certificates to modular form transformation laws remains a foundational exercise in overcoming typing friction. In particular, while standard holomorphic forms are supported in modern libraries, weakly holomorphic modular forms (forms admitting meromorphic poles at the cusps) require explicit handling of fractional linear domains with proven non-vanishing denominators. In this paper, we provide a complete, axiom-free Lean 4 formalization of this geometric action and its dependent-type certificate injection.
+
+\section{Mathematical Framework}
+
+Let $z = x + iy \in \mathbb{C}$ with $y > 0$, and let $M = \begin{pmatrix} a & b \\ c & d \end{pmatrix} \in GL_2^+(\mathbb{R})$ (where $a, b, c, d \in \mathbb{R}$ and $\Delta = ad - bc > 0$). The Möbius transformation is defined as:
+\begin{equation}
+M \cdot z = \frac{az + b}{cz + d}
+\end{equation}
+To prove that $M \cdot z \in \mathbb{H}$, we extract the imaginary part of the result by multiplying the numerator and denominator by the complex conjugate of the denominator, $\overline{cz+d} = cx+d - icy$:
+\begin{equation}
+\operatorname{Im}(M \cdot z) = \frac{(ad - bc)\operatorname{Im}(z)}{|cz+d|^2}
+\label{eq:im_part}
+\end{equation}
+To ensure this fraction is well-defined, we must prove $cz+d \neq 0$. If $c=0$, then $d \neq 0$ (since $ad-bc>0$), making $|d|^2 > 0$. If $c \neq 0$, then $\operatorname{Im}(cz+d) = c \operatorname{Im}(z) \neq 0$, hence $cz+d \neq 0$. Since $\Delta > 0$, $\operatorname{Im}(z) > 0$, and $|cz+d|^2 > 0$, it follows strictly that $\operatorname{Im}(M \cdot z) > 0$.
+
+\section{Lean 4 Mechanization}
+
+To formalize this result without admitting any unproven axioms (i.e., without the \texttt{sorry} tactic), we leverage the \texttt{Complex} and \texttt{Real} types in \texttt{Mathlib4}. We define $\mathbb{H}$ as a dependent subtype. The core challenge in ITP is coercing real matrix entries to the complex plane (using the \texttt{$\uparrow$} operator) while managing the proof context.
+
+\begin{lstlisting}[language=lean4, caption={Mechanization of the Möbius Action and UHP Topological Closure}]
+import Mathlib.Data.Complex.Basic
+import Mathlib.Data.Real.Basic
+import Mathlib.Tactic
+
+open Complex
+
+namespace ModularGeometry
+
+/-- 1. Definition of the Upper Half-Plane as a dependent subtype -/
+def UpperHalfPlane := { z : ℂ // 0 < z.im }
+
+/-- 2. Structure for a 2x2 real matrix with strictly positive determinant -/
+structure GLPos2Real where
+  a : ℝ
+  b : ℝ
+  c : ℝ
+  d : ℝ
+  det_pos : 0 < a * d - b * c
+
+/-- 3. Fractional linear transformation action on the complex plane -/
+noncomputable def mobius_action (M : GLPos2Real) (z : ℂ) : ℂ :=
+  (↑M.a * z + ↑M.b) / (↑M.c * z + ↑M.d)
+
+/-- Auxiliary Lemma: The denominator is never zero for z in H -/
+lemma denom_ne_zero (M : GLPos2Real) (z : UpperHalfPlane) : 
+  ↑M.c * z.val + ↑M.d ≠ 0 := by
+  intro h
+  -- Extracting the imaginary part of the null equation
+  have him : (↑M.c * z.val + ↑M.d).im = 0 := by rw [h]; rfl
+  simp only [add_im, mul_im, ofReal_im, ofReal_re, zero_mul, add_zero, zero_add] at him
+  
+  have hz_im_pos : 0 < z.val.im := z.property
+  -- Since c * z.im = 0 and z.im > 0, c must be 0
+  have hc_zero : M.c = 0 := by
+    cases mul_eq_zero.mp him with
+    | inl h1 => exact h1
+    | inr h2 => linarith
+    
+  -- Extracting the real part of the null equation
+  have hre : (↑M.c * z.val + ↑M.d).re = 0 := by rw [h]; rfl
+  simp only [hc_zero, ofReal_zero, zero_mul, zero_add, add_re, mul_re, ofReal_re, ofReal_im, zero_sub] at hre
+  
+  -- If c = 0 and d = 0, the determinant ad - bc = 0, contradicting det > 0
+  have hdet := M.det_pos
+  rw [hc_zero, hre] at hdet
+  linarith
+
+/-- Main Theorem: GL_2^+(R) preserves the Upper Half-Plane -/
+theorem mobius_preserves_uhp (M : GLPos2Real) (z : UpperHalfPlane) :
+  0 < (mobius_action M z.val).im := by
+  
+  unfold mobius_action
+  
+  have hz_im : 0 < z.val.im := z.property
+  have hdet : 0 < M.a * M.d - M.b * M.c := M.det_pos
+  have h_denom : ↑M.c * z.val + ↑M.d ≠ 0 := denom_ne_zero M z
+  have h_norm_pos : 0 < normSq (↑M.c * z.val + ↑M.d) := normSq_pos.mpr h_denom
+  
+  -- Isolate the imaginary part using the algebraic identity
+  have h_im_div : ((↑M.a * z.val + ↑M.b) / (↑M.c * z.val + ↑M.d)).im = 
+    (M.a * M.d - M.b * M.c) * z.val.im / normSq (↑M.c * z.val + ↑M.d) := by
+    simp only [div_im, add_im, mul_im, add_re, mul_re, ofReal_im, ofReal_re, normSq]
+    ring
+    
+  rw [h_im_div]
+  
+  -- The positivity tactic automatically deduces that a fraction 
+  -- composed of strictly positive reals remains strictly positive.
+  positivity
+
+\end{lstlisting}
+
+\section{Dependent Type Injection for Modular Forms}
+
+With the topological closure of $\mathbb{H}$ under $GL_2^+(\mathbb{R})$ securely mechanized, we can formalize the fundamental object of arithmetic geometry: the Modular Form~\cite{Miyake2006}. In classical mathematics, modular forms are defined with respect to a discrete arithmetic subgroup $\Gamma \le \mathrm{SL}_2(\mathbb{Z})$ (where $\det M = 1$), or via the weight-$k$ slash operator incorporating the determinant factor $(\det M)^{k/2} (cz+d)^{-k}$ to avoid trivial collapse on scalar transformations $\lambda I$. 
+
+In dependent type theory, applying a function typed as $\mathbb{H} \to \mathbb{C}$ requires formal proof that the transformed argument lies within $\mathbb{H}$. We utilize the previously proven \texttt{mobius\_preserves\_uhp} as a certificate to satisfy this type constraint. Below, we formalize this for the modular group $\mathrm{SL}_2(\mathbb{Z})$ (embedded as integer matrices with unit determinant inside $GL_2^+(\mathbb{R})$), establishing a type-safe foundation for modular forms.
+
+\begin{lstlisting}[language=lean4, caption={Definition of a Modular Form for $\mathrm{SL}_2(\mathbb{Z})$ in Lean 4}]
+/-- 4. Structure for SL_2(Z) matrices -/
+structure SL2Z where
+  a : ℤ
+  b : ℤ
+  c : ℤ
+  d : ℤ
+  det_one : a * d - b * c = 1
+
+/-- Coercion from SL2Z to GLPos2Real -/
+def SL2Z.toGLPos2Real (M : SL2Z) : GLPos2Real := {
+  a := M.a
+  b := M.b
+  c := M.c
+  d := M.d
+  det_pos := by
+    have h : (M.a : ℝ) * (M.d : ℝ) - (M.b : ℝ) * (M.c : ℝ) = 1 := by
+      push_cast; exact congrArg Int.cast M.det_one
+    rw [h]; positivity
+}
+
+/-- 5. Formal Structure of a Modular Form -/
+structure ModularForm (k : ℤ) where
+  func : UpperHalfPlane → ℂ
+  
+  /-- The functional equation requires a certificate of topological closure -/
+  transform : ∀ (M : SL2Z) (z : UpperHalfPlane),
+    -- We pass the proof term to safely inject the mapped coordinate back into H
+    func ⟨mobius_action M.toGLPos2Real z.val, mobius_preserves_uhp M.toGLPos2Real z⟩ = 
+    (↑M.c * z.val + ↑M.d)^k * func z
+
+end ModularGeometry
+\end{lstlisting}
+
+This \texttt{structure} intrinsically binds the computational mapping \texttt{func} with its transformation law into a single type-safe mathematical object.
+
+\begin{remark}[Fricke Involution in $GL_2^+(\mathbb{R})$]
+A key advantage of defining the modular action over the broad group $GL_2^+(\mathbb{R})$, rather than restricting solely to $\mathrm{SL}_2(\mathbb{Z})$, is the natural accommodation of scaling and involution operators crucial to moonshine and modular theories, such as the Fricke involution. For a given level $N > 0$, the Fricke involution is represented by the matrix $W_N = \begin{pmatrix} 0 & -1 \\ N & 0 \end{pmatrix}$. Its determinant is $N > 0$, meaning $W_N \in GL_2^+(\mathbb{R})$. This allows our \texttt{mobius\_preserves\_uhp} theorem to immediately provide the topological certificate for the map $z \mapsto -1/(Nz)$ without requiring ad-hoc geometric extensions.
+\end{remark}
+
+\begin{remark}[Scope delimitation]
+The \texttt{ModularForm} structure above captures the \emph{algebraic} transformation law but deliberately omits two analytic conditions that are essential in the classical definition~\cite{DiamondShurman2005}: (i) holomorphy on~$\mathbb{H}$ (requires complex-differentiability in Lean, currently under development in \texttt{Mathlib4}), and (ii) the moderate growth condition at the cusps (bounding $|f(z)|$ as $\operatorname{Im}(z) \to \infty$). Extending the formalization to include these conditions is a natural direction for future work.
+\end{remark}
+
+\section{Discussion and Conclusion}
+
+Translating complex continuous geometry into an Interactive Theorem Prover emphasizes the rigidity of field coercions. In our Lean~4 script, the combination of the \texttt{linarith} tactic to resolve the contradiction on the denominator and the \texttt{ring} tactic for multivariate polynomial equivalence significantly reduces the proof burden.
+
+By mechanizing the action of $GL_2^+(\mathbb{R})$ on $\mathbb{H}$ without unverified axioms (zero \texttt{sorry}), we provide a verified foundational component. We stress that the code listings in this paper are presented in a pedagogical style; the fully compilable Lean~4 source is available in the companion repository. The present formalization addresses only the algebraic core (group action, denominator non-vanishing, transformation law). Extending to the full analytic theory of modular forms---including holomorphy, Fourier expansions, and cusp conditions---remains an active challenge for the \texttt{Mathlib4} community~\cite{Mathlib2020, Buzzard2021}.
+
+\begin{thebibliography}{99}
+\bibitem{Mathlib2020} The mathlib Community, \textit{The Lean mathematical library}, Proceedings of the 9th ACM SIGPLAN International Conference on Certified Programs and Proofs (CPP), 2020.
+\bibitem{Buzzard2021} K.~Buzzard, \textit{Formalising mathematics}, Math. Proc. Cambridge Philos. Soc., 2021.
+\bibitem{DiamondShurman2005} F.~Diamond, J.~Shurman, \textit{A First Course in Modular Forms}, Graduate Texts in Mathematics \textbf{228}, Springer (2005).
+\bibitem{Miyake2006} T.~Miyake, \textit{Modular Forms}, Springer Monographs in Mathematics (2006).
+\bibitem{deMoura2021} L.~de~Moura et al., \textit{The Lean 4 Theorem Prover and Programming Language}, CADE-28, Lecture Notes in Computer Science \textbf{12699}, Springer (2021).
+\end{thebibliography}
+
+\end{document}

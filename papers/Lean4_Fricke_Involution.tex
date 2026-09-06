@@ -1,0 +1,507 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{DejaVu Sans Mono}[Scale=0.85]
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{hyperref}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{fancyvrb}
+\usepackage{caption}
+\captionsetup[figure]{name=Listing}
+\newcommand{\lean}[1]{\ifmmode\text{\ttfamily\detokenize{#1}}\else{\ttfamily\detokenize{#1}}\fi}
+
+\definecolor{indigo}{rgb}{0.29, 0.0, 0.51}
+\definecolor{teal}{rgb}{0.0, 0.5, 0.5}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=teal,
+    citecolor=indigo,
+    urlcolor=blue
+}
+
+% --- LEAN 4 SYNTAX HIGHLIGHTING ---
+\definecolor{keywordcolor}{rgb}{0.13, 0.13, 0.6}
+\definecolor{stringcolor}{rgb}{0.6, 0.13, 0.13}
+\definecolor{commentcolor}{rgb}{0.25, 0.5, 0.35}
+\definecolor{leanbackground}{rgb}{0.97, 0.98, 0.99}
+
+\lstdefinelanguage{lean4}{
+  keywords={def, theorem, lemma, structure, class, where, by, sorry, intros, intro, rfl, contradiction, cases, induction, open, namespace, end, import, have, show, match, with, decide, constructor, let, in, noncomputable, exact, apply, rw, simp, calc, ring, positivity, linarith, unfold},
+  keywordstyle=\color{keywordcolor}\bfseries,
+  ndkeywords={Nat, Real, Bool, Prop, Type, String, Int, Float, List, Complex, UpperHalfPlane, GLPos2Real, SL2Z, ModularForm},
+  ndkeywordstyle=\color{purple}\bfseries,
+  comment=[l]{--},
+  morecomment=[s]{/-}{-/},
+  commentstyle=\color{commentcolor}\itshape,
+  stringstyle=\color{stringcolor},
+  sensitive=true,
+  extendedchars=true,
+  literate={ℝ}{{$\mathbb{R}$}}1 {ℂ}{{$\mathbb{C}$}}1 {ℤ}{{$\mathbb{Z}$}}1 {↑}{{$\uparrow$}}1 {≠}{{$\neq$}}1 {>}{{$>$}}1 {<}{{$<$}}1 {≥}{{$\geq$}}1 {≤}{{$\leq$}}1 {₀}{{$_0$}}1 {∀}{{$\forall$}}1 {⟨}{{$\langle$}}1 {⟩}{{$\rangle$}}1 {→}{{$\to$}}1
+}
+
+\lstset{
+  language=lean4,
+  backgroundcolor=\color{leanbackground},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{gray!30},
+  captionpos=b,
+  keepspaces=true,
+  showstringspaces=false
+}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{\textbf{A Mathlib-Idiomatic Formalization of the Fricke \\ Involution and its Operator on Modular Forms}}
+\author{
+  Xavier Callens\thanks{Corresponding author: \texttt{callensxavier@gmail.com}} \\
+  \small SocrateAI Research Initiative
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We formalize, in Lean 4 on top of Mathlib, the Fricke involution
+$W_N = \left(\begin{smallmatrix} 0 & -1 \\ N & 0 \end{smallmatrix}\right)$ on $\Gamma_0(N)$
+and the operator it induces on modular forms, as a small reusable API rather than as
+proof-internal infrastructure. We claim no priority: Fricke and Atkin--Lehner material already
+exists in Lean~4 in the Fermat's Last Theorem artifact~\cite{FLT2026}
+(\S\ref{sec:related}), which covers strictly more. What we offer is a packaging aimed at
+upstreaming --- Mathlib itself contains no Fricke or Atkin--Lehner operator. Mathlib already provides the upper
+half-plane, the M\"obius action of $GL_2(\mathbb{R})$, the weight-$k$ slash action carrying
+the determinant factor, the congruence subgroups $\Gamma_0(N)$, and the bundled types
+\lean{SlashInvariantForm} and \lean{ModularForm}; it contains no Fricke or Atkin--Lehner
+operator. We supply that missing piece in three layers: (i) the matrix level --- $W_N \in
+GL_2^+(\mathbb{R})$ with $\det W_N = N$, the involution identity $W_N^2 = -N \cdot I$, the
+explicit conjugation $W_N \gamma W_N^{-1} = \left(\begin{smallmatrix} d & -c/N \\ -Nb & a
+\end{smallmatrix}\right)$, and the theorem that $W_N$ normalizes $\Gamma_0(N)$; (ii) the
+slash level --- $f \mapsto f\vert_k W_N$ preserves $\Gamma_0(N)$-slash-invariance; and
+(iii) the bundled level --- the operator is well defined on \lean{ModularForm}, its
+holomorphy and boundedness at the cusps transported along $W_N$.
+The development is 27 declarations in 291 lines; all 21 theorems compile with no \lean{sorry}
+and depend on exactly Lean's three standard axioms \lean{propext}, \lean{Classical.choice} and
+\lean{Quot.sound}, pinned by 16 build-failing \texttt{\#guard\_msgs} checks so that a drifted
+footprint fails compilation. We make no claim of new mathematics: the results are classical,
+due to Fricke and to Atkin--Lehner~\cite{AtkinLehner1970}. The contribution is the
+mechanization, and its intended use is as infrastructure for formalizing eta-quotient
+identities, where Fricke eigenvalues are the organizing invariant.
+\end{abstract}
+
+\noindent\textbf{MSC 2020:} 11F11, 11F06, 68V20.\quad
+\textbf{Keywords:} Fricke involution, Atkin--Lehner theory, congruence subgroups,
+Lean 4, Mathlib, formal verification.
+
+\section{Introduction}
+
+The Fricke involution is elementary to state and ubiquitous in the theory of modular forms
+on $\Gamma_0(N)$. For $N \ge 1$ set
+\[
+  W_N \;=\; \begin{pmatrix} 0 & -1 \\ N & 0 \end{pmatrix}, \qquad \det W_N = N > 0 .
+\]
+Acting on the upper half-plane by $\tau \mapsto -1/(N\tau)$, it exchanges the cusps $0$ and
+$\infty$ of $\Gamma_0(N)$, normalizes $\Gamma_0(N)$, and induces an involution on
+$M_k(\Gamma_0(N))$ whose $\pm 1$ eigenspaces organize much of the arithmetic of the space
+--- most visibly for eta-quotients, where multiplicativity is read off from Fricke and
+Atkin--Lehner eigenvalues~\cite{Martin1996, Ono2004}.
+
+This note is written in the mode that recent practice makes standard: a formal artifact
+shipped alongside the human exposition. Large-scale autoformalization has crossed a
+threshold --- a complete machine-checked proof of Fermat's Last Theorem was produced in
+eleven days by AI agents coordinating through a shared statement graph~\cite{FLT2026,
+Prove2Me2026} --- and the surrounding methodological questions are now mainstream
+mathematics~\cite{Tao2026AI, Buzzard2021}. We work in Lean~4~\cite{deMoura2021} against
+Mathlib~\cite{Mathlib2020}, and we adopt two specific practices from the FLT artifact:
+the axiom audit as a \emph{build target}, and an explicit statement-dependency graph
+(\S\ref{sec:verification}).
+
+\subsection*{What Mathlib already provides}
+
+We are explicit about prior art, because it determines what is and is not new here.
+As of commit \texttt{905b9581} (2026-07-28), Mathlib~\cite{Mathlib2020} contains, in forms
+strictly more general than we would need to restate:
+
+\begin{itemize}
+  \item \lean{UpperHalfPlane} and the M\"obius action of \lean{GL (Fin 2) ℝ},
+        together with \lean{denom_ne_zero_of_im} and \lean{normSq_denom_pos};
+  \item \lean{im_smul_eq_div_normSq}, which is exactly the classical identity
+        $\operatorname{Im}(M \cdot \tau) = |\det M| \operatorname{Im}(\tau) / |c\tau + d|^2$,
+        stated for arbitrary $M \in GL_2(\mathbb{R})$ via $|\det M|$ rather than only for
+        $\det M > 0$;
+  \item \lean{Matrix.GLPos}, the subgroup of positive determinant;
+  \item \lean{CongruenceSubgroup.Gamma0 N};
+  \item the weight-$k$ slash action
+        \lean{SlashAction ℤ (GL (Fin 2) ℝ) (ℍ → ℂ)}, whose definition
+        \emph{already carries} the determinant factor,
+        $f\vert_k g = \sigma(g)\, f(g\cdot\tau)\, |\det g|^{k-1} \operatorname{denom}(g,\tau)^{-k}$;
+  \item the bundled \lean{ModularForm Γ k} for
+        \lean{Γ : Subgroup (GL (Fin 2) ℝ)}, with holomorphy and boundedness at cusps.
+\end{itemize}
+
+None of that is reproved here; we import it. A reader looking for a formalization of the
+$GL_2^+(\mathbb{R})$-action on $\mathbb{H}$ should use Mathlib's, not ours.
+
+\subsection*{The gap, and what we contribute}
+
+A repository-wide search of Mathlib at that commit for \texttt{Fricke} or
+\texttt{AtkinLehner} returns \emph{zero} occurrences: the machinery to host these operators
+exists in Mathlib, but the operators do not. That is the gap we address --- with the important
+qualification, developed in \S\ref{sec:related}, that Fricke material \emph{does} already exist
+in Lean~4 outside Mathlib. Our contributions are therefore stated as an API, not as firsts:
+
+\begin{enumerate}
+  \item[(C1)] $W_N$ as an element of \lean{GL (Fin 2) ℝ} with $\det W_N = N$, and
+        $W_N \in GL_2^+(\mathbb{R})$ (Theorem~\ref{thm:glpos});
+  \item[(C2)] $W_N^2 = -N \cdot I$ (Theorem~\ref{thm:involution}), which since scalar
+        matrices act trivially on $\mathbb{H}$ is the involution property;
+  \item[(C3)] the explicit conjugation formula (Theorem~\ref{thm:conj});
+  \item[(C4)] $W_N$ conjugates $\Gamma_0(N)$ into itself inside $GL_2(\mathbb{R})$
+        (Theorem~\ref{thm:normalizes}); together with $W_N^2 = -N\cdot I$ central this gives
+        the two-sided normalizer condition, though we formalize the containment;
+  \item[(C5)] slashing by $W_N$ preserves $\Gamma_0(N)$-slash-invariance, giving the operator
+        on \lean{SlashInvariantForm} (Theorem~\ref{thm:slashinv});
+  \item[(C6)] holomorphy and boundedness at the cusps transport along $W_N$, giving the
+        operator on the bundled \lean{ModularForm} (Theorem~\ref{thm:modular});
+  \item[(C7)] the composite $f \mapsto (f\vert_k W_N)\vert_k W_N$ is multiplication by the
+        explicit scalar $(-1)^k N^{k-2}$ (Theorem~\ref{thm:composite}), which identifies the
+        normalization making $\vert_k W_N$ an involution.
+\end{enumerate}
+
+(C4) is the hinge: it is what makes $f \mapsto f\vert_k W_N$ well defined at all. (C5) and
+(C6) carry it up to Mathlib's bundled types, so that the Fricke operator can be composed with
+the rest of the library rather than living beside it.
+
+\section{Mathematical background}
+
+Let $\gamma = \left(\begin{smallmatrix} a & b \\ c & d\end{smallmatrix}\right) \in SL_2(\mathbb{Z})$
+with $\gamma \in \Gamma_0(N)$, i.e.\ $N \mid c$; write $c = Nc'$. A direct computation gives
+\begin{equation}\label{eq:conj}
+  W_N \gamma W_N^{-1}
+  \;=\; \begin{pmatrix} d & -c' \\ -Nb & a \end{pmatrix} ,
+\end{equation}
+whose entries are integers precisely because $N \mid c$, whose determinant is
+$da - (-c')(-Nb) = ad - bc = 1$, and whose lower-left entry $-Nb$ is divisible by $N$.
+Hence the conjugate again lies in $\Gamma_0(N)$, and $W_N$ normalizes $\Gamma_0(N)$.
+
+Rather than manipulate $W_N^{-1}$ in the formalization, we prove the equivalent
+\emph{intertwining} identity
+\begin{equation}\label{eq:intertwine}
+  W_N \cdot \gamma \;=\; \delta \cdot W_N, \qquad
+  \delta := \begin{pmatrix} d & -c' \\ -Nb & a \end{pmatrix},
+\end{equation}
+which avoids inverses entirely and from which \eqref{eq:conj} follows by one right
+multiplication. Both sides of \eqref{eq:intertwine} equal
+$\left(\begin{smallmatrix} -c & -d \\ Na & Nb \end{smallmatrix}\right)$, the two agreeing
+exactly on the relation $c = Nc'$.
+
+\section{The Lean development}
+
+The development is four modules. We reproduce the load-bearing declarations verbatim from
+the compiled source.
+
+\begin{figure}[h]
+\begin{Verbatim}[frame=single,fontsize=\small,samepage=true]
+def frickeMatrix (N : ℕ) : Matrix (Fin 2) (Fin 2) ℝ := !![0, -1; (N : ℝ), 0]
+
+@[simp] theorem frickeMatrix_det (N : ℕ) : (frickeMatrix N).det = (N : ℝ) := by
+  simp [frickeMatrix, Matrix.det_fin_two_of]
+
+noncomputable def frickeW {N : ℕ} (hN : 0 < N) : GL (Fin 2) ℝ :=
+  Matrix.GeneralLinearGroup.mkOfDetNeZero (frickeMatrix N) (frickeMatrix_det_ne_zero hN)
+\end{Verbatim}
+\caption{The Fricke matrix and its determinant.}
+\end{figure}
+
+
+\begin{theorem}[$W_N$ has positive determinant]\label{thm:glpos}
+\lean{frickeW_mem_GLPos : frickeW hN ∈ GLPos (Fin 2) ℝ}.
+\end{theorem}
+
+\begin{theorem}[Involution]\label{thm:involution}
+$W_N^2 = -N \cdot I$:
+\lean{frickeW_sq_coe : ((frickeW hN * frickeW hN : GL (Fin 2) ℝ) : Matrix _ _ ℝ)}
+\lean{= (-(N : ℝ)) • 1}.
+\end{theorem}
+
+Since scalar matrices act trivially on $\mathbb{H}$, Theorem~\ref{thm:involution} says
+precisely that $W_N$ induces an involution of the upper half-plane.
+
+The arithmetic input is the divisibility extracted from membership in $\Gamma_0(N)$, which
+Mathlib states modulo $N$:
+
+\begin{figure}[h]
+\begin{Verbatim}[frame=single,fontsize=\small,samepage=true]
+theorem gamma0_dvd_lower_left {N : ℕ} {γ : SL(2, ℤ)} (hγ : γ ∈ Gamma0 N) :
+    (N : ℤ) ∣ γ.1 1 0 := by
+  rw [Gamma0_mem] at hγ
+  exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hγ
+\end{Verbatim}
+\caption{Divisibility of the lower-left entry.}
+\end{figure}
+
+
+The conjugate $\delta$ of \eqref{eq:conj} is then definable as a genuine $SL_2(\mathbb{Z})$
+element, its determinant condition discharged by \lean{linear_combination} against
+$\det \gamma = 1$:
+
+\begin{figure}[h]
+\begin{Verbatim}[frame=single,fontsize=\small,samepage=true]
+def frickeConj {N : ℕ} (γ : SL(2, ℤ)) (c' : ℤ) (hc : γ.1 1 0 = (N : ℤ) * c') : SL(2, ℤ) :=
+  ⟨!![γ.1 1 1, -c'; -(N : ℤ) * γ.1 0 1, γ.1 0 0], by
+    have hdet := γ.2
+    rw [Matrix.det_fin_two] at hdet; rw [hc] at hdet
+    rw [Matrix.det_fin_two_of]; linear_combination hdet⟩
+\end{Verbatim}
+\caption{The Fricke conjugate, with its determinant proof.}
+\end{figure}
+
+
+\begin{theorem}[Conjugation]\label{thm:conj}
+\lean{frickeW_conj_eq} : for $\gamma \in SL_2(\mathbb{Z})$ with $c = Nc'$,
+\[
+  W_N \cdot \mathrm{mapGL}_{\mathbb{R}}(\gamma) \cdot W_N^{-1}
+  \;=\; \mathrm{mapGL}_{\mathbb{R}}(\mathrm{frickeConj}\,\gamma\,c') .
+\]
+The proof rewrites by the intertwining identity \eqref{eq:intertwine} and cancels
+$W_N W_N^{-1}$.
+\end{theorem}
+
+\begin{theorem}[Main result: normalization]\label{thm:normalizes}
+\lean{frickeW_normalizes_Gamma0} :
+\[
+  \forall g \in \mathrm{Gamma0}(N).\mathrm{map}(\mathrm{mapGL}_{\mathbb{R}}), \quad
+  W_N \, g \, W_N^{-1} \in \mathrm{Gamma0}(N).\mathrm{map}(\mathrm{mapGL}_{\mathbb{R}}) .
+\]
+\end{theorem}
+
+\begin{proof}[Proof (as formalized)]
+Destructure $g = \mathrm{mapGL}_{\mathbb{R}}(\gamma)$ with $\gamma \in \Gamma_0(N)$;
+obtain $c'$ with $c = Nc'$ from \lean{gamma0_dvd_lower_left}; rewrite by
+Theorem~\ref{thm:conj}; conclude by \lean{Subgroup.mem_map_of_mem} applied to
+\lean{frickeConj_mem_Gamma0}, whose content is that the lower-left entry $-Nb$
+vanishes modulo $N$.
+\end{proof}
+
+\section{The operator on modular forms}
+
+Normalization is a statement about groups; being an \emph{operator on modular forms} requires
+carrying the two analytic side conditions of \lean{ModularForm} along $W_N$. We do this in two
+steps, working with the image $\Gamma_0(N)_{\mathbb{R}} := \Gamma_0(N).\mathrm{map}(\mathrm{mapGL}_{\mathbb{R}})$
+inside $GL_2(\mathbb{R})$, which is the subgroup Mathlib's bundled types are stated over.
+
+\begin{theorem}[Slash-invariance]\label{thm:slashinv}
+\lean{slash_frickeW_invariant} : for $f$ a \lean{SlashInvariantForm} of weight $k$ for
+$\Gamma_0(N)_{\mathbb{R}}$ and any $g$ in that subgroup,
+$(f\vert_k W_N)\vert_k g = f\vert_k W_N$.
+\end{theorem}
+
+\begin{proof}[Proof (as formalized)]
+Write $g = \mathrm{mapGL}_{\mathbb{R}}(\gamma)$ with $\gamma \in \Gamma_0(N)$ and extract
+$c = Nc'$. Then, using the slash cocycle in both directions and the intertwining
+identity~\eqref{eq:intertwine},
+\[
+  (f\vert_k W_N)\vert_k \gamma \;=\; f\vert_k(W_N\gamma) \;=\; f\vert_k(\delta W_N)
+  \;=\; (f\vert_k \delta)\vert_k W_N \;=\; f\vert_k W_N ,
+\]
+the last step by slash-invariance of $f$ under $\delta \in \Gamma_0(N)$
+(Theorem~\ref{thm:conj}). This packages as \lean{frickeSlashOperator}.
+\end{proof}
+
+\begin{theorem}[Operator on \lean{ModularForm}]\label{thm:modular}
+\lean{frickeModularOperator} : $f \mapsto f\vert_k W_N$ is a map
+$\lean{ModularForm}\ \Gamma_0(N)_{\mathbb{R}}\ k \to \lean{ModularForm}\ \Gamma_0(N)_{\mathbb{R}}\ k$.
+\end{theorem}
+
+\begin{proof}[Proof (as formalized)]
+Holomorphy is immediate from Mathlib's \lean{MDifferentiable.slash}: slashing by any fixed
+element of $GL_2(\mathbb{R})$ preserves \lean{MDiff}. For boundedness, Mathlib's
+\lean{OnePoint.IsBoundedAt.smul_iff} reduces \emph{$f\vert_k W_N$ is bounded at $c$} to
+\emph{$f$ is bounded at $W_N \cdot c$}, so it suffices that $W_N$ carries cusps of
+$\Gamma_0(N)$ to cusps of $\Gamma_0(N)$. That is \lean{isCusp_frickeW_smul}, obtained from
+Mathlib's \lean{IsCusp.smul} together with the subgroup form of Theorem~\ref{thm:normalizes}
+(\lean{frickeW_conjAct_le}) and the monotonicity of \lean{IsCusp} in its subgroup argument.
+\end{proof}
+
+Concretely $W_N$ exchanges the cusps $0$ and $\infty$ of $\Gamma_0(N)$; what is proved here is
+the weaker statement, sufficient for the transport, that the cusp set is preserved.
+
+\begin{theorem}[The composite is a scalar]\label{thm:composite}
+\lean{frickeW_sq_slash} : for every $f : \mathbb{H} \to \mathbb{C}$ and every weight $k$,
+\[
+  (f\vert_k W_N)\vert_k W_N \;=\; (N^2)^{k-1}(-N)^{-k}\, f \;=\; (-1)^k N^{k-2}\, f .
+\]
+\end{theorem}
+
+\begin{proof}[Proof (as formalized)]
+By the cocycle law the left side is $f\vert_k(W_N^2)$, and $W_N^2 = -N\cdot I$ is scalar
+(Theorem~\ref{thm:involution}). For that matrix the three ingredients of Mathlib's slash are
+computed directly: $\det(W_N^2) = N^2$, $\operatorname{denom}(W_N^2,\tau) = -N$, and
+$W_N^2$ acts trivially on $\mathbb{H}$. The conjugation factor $\sigma$ needs no determinant
+case split: $\sigma(gg') = \sigma g \circ \sigma g'$ and $\sigma g \circ \sigma g = \mathrm{id}$
+give $\sigma(W_N^2) = \mathrm{id}$ at once.
+\end{proof}
+
+For even $k$ it follows that $f \mapsto N^{1-k/2}(f\vert_k W_N)$ squares to the identity --- the
+Fricke involution proper. For odd $k$ the question is vacuous, since $-I \in \Gamma_0(N)$ forces
+$f \equiv 0$ (Mathlib's \lean{ModularForm.eq_zero_of_neg_one_mem}).
+
+\section{Verification status}\label{sec:verification}
+
+Every declaration in the module compiles. There are no \lean{sorry} placeholders and
+no project-local axioms. The axiom footprint of each theorem, obtained by
+\texttt{\#print axioms}, is exactly
+\[
+  [\,\texttt{propext},\ \texttt{Classical.choice},\ \texttt{Quot.sound}\,] ,
+\]
+the three standard axioms of Lean's logic. Following the Fermat's Last Theorem
+artifact~\cite{FLT2026}, the footprint is not merely reported but \emph{enforced}: a
+\lean{FinalCheck} module places a \texttt{\#guard\_msgs in \#print axioms} guard on each of the
+eight headline theorems inside the default build target, so any widening of the axiom set is
+a compile error, and a negative control (a guard asserting a deliberately wrong footprint)
+is kept outside the build and verified to fail. The development is tracked as a
+statement-dependency graph (\lean{dag/theorems.jsonl}, with a human-readable map in
+\lean{dag/PROOF-PATH.md}); the machine checks that every node marked proved names an
+existing declaration and depends only on proved nodes. We claim nothing beyond what the
+kernel checks:
+in the terminology we adopt throughout the SocrateAI programme, (C1)--(C7) are
+\emph{formal} results; the surrounding exposition is not.
+
+\paragraph{Artifact.}
+Repository \url{https://github.com/xaviercallens/SocrateAI-Lean-Lib} (tag
+\texttt{fricke-v1}); module
+\texttt{Lean/SocrateAI/ModularForms/\{FrickeInvolution, FrickeSlash, FrickeModular, FrickeComposite\}.lean},
+with the axiom guards in \texttt{Lean/SocrateAI/FinalCheck.lean};
+toolchain \texttt{leanprover/lean4:v4.32.2};
+Mathlib pinned at commit \texttt{905b9581} (2026-07-28);
+\texttt{lake build SocrateAI} completes in 2346 jobs (including the axiom-guard module).
+The four modules total 27 declarations in 291 lines and import only
+\lean{Mathlib.NumberTheory.ModularForms.SlashActions},
+\lean{Mathlib.NumberTheory.ModularForms.CongruenceSubgroups},
+\lean{Mathlib.NumberTheory.ModularForms.SlashInvariantForms} and
+\lean{Mathlib.NumberTheory.ModularForms.Basic}.
+A statement-dependency graph with a natural-language description per node, and a validator
+enforcing that every node marked proved names an existing declaration and depends only on
+proved nodes, is in \texttt{dag/}.
+
+\section{Related work}\label{sec:related}
+
+\paragraph{Prior Lean 4 formalization of Fricke material.}
+The Fermat's Last Theorem artifact~\cite{FLT2026} is a Lean~4 development built on Mathlib that
+already contains substantial Fricke and Atkin--Lehner theory. A repository-scoped code search
+returns on the order of $2.7\times10^3$ Lean files mentioning \texttt{Fricke} and
+$3.6\times10^3$ mentioning \texttt{AtkinLehner}, including
+\texttt{Thm\_ModularForm\_heckeU\_add\_slash\_fricke\_eq\_zero},
+\texttt{Thm\_CuspForm\_hasNebentypus\_inv\_and\_qCoeff\_hecke\_eigen\_of\_fricke} and
+\texttt{Def\_ModularCurve\_AtkinLehner}. Their statements use the same matrix
+$\left(\begin{smallmatrix} 0 & -1 \\ N & 0\end{smallmatrix}\right)$ and the same Mathlib slash
+action that we use here, and they go considerably further --- to Hecke operators, eigenforms with
+nebentypus, and Atkin--Lehner operators on modular curves.
+
+Most directly, \texttt{Def\_CuspForm\_AtkinLehnerOperator.lean} defines
+\texttt{atkinLehnerLin}, a map
+$\texttt{ModularForm}\ (\Gamma_0(M))\ k \to_{\ell[\mathbb{C}]} \texttt{ModularForm}\ (\Gamma_0(M))\ k$,
+discharging slash-invariance, holomorphy and boundedness at the cusps as our
+\texttt{frickeModularOperator} does --- our (C5) and (C6), for the whole Atkin--Lehner family and
+as a $\mathbb{C}$-linear map. Their \texttt{Def\_ModularForm\_AtkinLehnerDatum.lean} builds its
+group element with the same \texttt{mkOfDetNeZero} idiom we use and proves the analogue of our
+(C1), (C2) and (C7).
+
+In particular their \texttt{CohCarrier.frickeMat} is, up to naming, our
+\texttt{frickeConj}: the same conjugate matrix
+$\left(\begin{smallmatrix} d & -c/N \\ -Nb & a\end{smallmatrix}\right)$, the same divisibility
+hypothesis, and a determinant proof that likewise finishes with
+\texttt{linear\_combination}. Our development was arrived at independently, which does not bear
+on priority; we record the coincidence because a reader comparing the two should know they are
+the same construction.
+
+\paragraph{What is nonetheless offered here.}
+The FLT material is proof-internal: it lives in a bespoke \texttt{CohCarrier} namespace, and
+$W_N$ is generally passed to each theorem as a parameter constrained by a matrix equation. We
+instead define $W_N$ once as a \texttt{GL (Fin 2) ℝ} element and prove the small surrounding
+theory --- membership in $GL_2^+$, $W_N^2 = -N\cdot I$, the conjugation formula, and the induced
+operators on \texttt{SlashInvariantForm} and \texttt{ModularForm}. The intended destination is
+Mathlib, which has none of this. Stated precisely, what is left after disclosure is: the literal
+matrix $W_N$ over $\mathbb{R}$ (their datum's lower-right entry is $q$, so it does not specialize
+to $W_N$ on the nose), the explicit composite scalar of (C7), and a four-named-import development
+using stock tactics rather than a bespoke proof harness. That is a methodology difference, and
+whether it is worth anything is a question for Mathlib review, not for us to assert.
+
+\section{Limitations}
+
+Fricke and Atkin--Lehner operators are classical; the definitive treatment of the
+Atkin--Lehner involutions $W_Q$ for $Q \| N$ is~\cite{AtkinLehner1970}, and textbook
+accounts appear in~\cite{DiamondShurman2005, Miyake2006, Ono2004}. Our contribution is not
+mathematical novelty but the transfer of this material into a machine-checked setting where
+it can be depended upon.
+
+We state the limitations plainly.
+
+\begin{remark}[What is \emph{not} done here]
+\leavevmode
+\begin{enumerate}[label=(\alph*)]
+  \item We formalize the Fricke involution $W_N$ only. The full Atkin--Lehner family $W_Q$
+        for $Q \| N$, and the resulting simultaneous eigenspace decomposition, are not
+        treated.
+  \item The $\pm 1$ eigenspace decomposition of $M_k(\Gamma_0(N))$ is not itself packaged as a
+        Lean definition. The mathematical content is Theorem~\ref{thm:composite}, which is
+        formalized; what remains is bookkeeping --- carrying the even-$k$ hypothesis through the
+        \lean{zpow} arithmetic on the constant and bundling the two eigenspaces as submodules.
+  \item We make no priority claim. Our gap check was run against Mathlib, where it holds; a
+        later search of the Lean~4 developments cited here found the prior art described in
+        \S\ref{sec:related}. We have not searched the Lean Zulip or other proof assistants.
+\end{enumerate}
+\end{remark}
+
+\section{Intended application}
+
+The motivation is downstream. Eta-quotients
+$f(\tau) = \prod_{\delta \mid N} \eta(\delta \tau)^{r_\delta}$ are modular on $\Gamma_0(N)$
+under Ligozat's conditions, and their behaviour under Fricke and Atkin--Lehner operators is
+what makes multiplicativity tractable~\cite{Martin1996}. A formalization of eta-quotient
+identities therefore needs $W_N$ as a prerequisite, which is what this module supplies.
+The same operator is the modular-side input to the moonshine correspondences studied
+elsewhere in this programme. With the operator now defined on \lean{ModularForm}, the immediate next steps are the
+normalization constant of limitation (b) and the full Atkin--Lehner family of limitation (a). On the
+analytic side, the Rademacher-type coefficient bounds that accompany the eta-quotient
+programme will first be checked at the program-verified tier with lightweight
+inequality-proof tooling in the style of Tao's \emph{estimates} assistant~\cite{TaoEstimates2025},
+and only then promoted to kernel-checked statements --- the same two-tier discipline
+(exact checker below, kernel above) used throughout this programme.
+
+\section{Conclusion}
+
+We have formalized the Fricke involution $W_N$ on $\Gamma_0(N)$ in Lean 4 and the operator it
+induces on modular forms, addressing a gap in \emph{Mathlib} --- though not, as
+\S\ref{sec:related} records, in Lean 4 as a whole. The development is
+small --- 27 declarations in 291 lines --- depends only on Lean's three standard axioms, and is
+built on Mathlib's existing \lean{SlashAction}, \lean{SlashInvariantForm} and
+\lean{ModularForm} infrastructure rather than duplicating it, so that it composes with the
+rest of the library. The mathematics is classical; the machine-checked statement of it is not.
+
+\begin{thebibliography}{99}
+\bibitem{AtkinLehner1970} A.~O.~L.~Atkin, J.~Lehner, \textit{Hecke operators on $\Gamma_0(m)$}, Math.\ Ann.\ \textbf{185} (1970), 134--160. \texttt{doi:10.1007/BF01359701}.
+\bibitem{Mathlib2020} The mathlib Community, \textit{The Lean mathematical library}, Proceedings of the 9th ACM SIGPLAN International Conference on Certified Programs and Proofs (CPP), 2020.
+\bibitem{Buzzard2021} K.~Buzzard, \textit{Formalising mathematics}, Math.\ Proc.\ Cambridge Philos.\ Soc., 2021.
+\bibitem{DiamondShurman2005} F.~Diamond, J.~Shurman, \textit{A First Course in Modular Forms}, Graduate Texts in Mathematics \textbf{228}, Springer (2005).
+\bibitem{Miyake2006} T.~Miyake, \textit{Modular Forms}, Springer Monographs in Mathematics (2006).
+\bibitem{Ono2004} K.~Ono, \textit{The Web of Modularity: Arithmetic of the Coefficients of Modular Forms and $q$-series}, CBMS Regional Conference Series in Mathematics \textbf{102}, AMS (2004). \texttt{doi:10.1090/cbms/102}.
+\bibitem{Martin1996} Y.~Martin, \textit{Multiplicative eta-quotients}, Trans.\ Amer.\ Math.\ Soc.\ \textbf{348} (1996), 4825--4856.
+\bibitem{FLT2026} Anthropic, \textit{A formal proof of Fermat's Last Theorem in Lean 4}, software artifact, \url{https://github.com/anthropics/fermats-last-theorem}, 2026.
+\bibitem{Prove2Me2026} S.~Chen, K.~Marwaha, X.~Lu, H.~Yuen, T.~Peng, \textit{Prove2Me: An open collaborative platform for scaling math formalization}, arXiv:2608.28433, 2026.
+\bibitem{Tao2026AI} T.~Tao, \textit{Mathematics in the age of AI}, lecture at the International Congress of Mathematicians 2026; arXiv:2608.16753.
+\bibitem{TaoEstimates2025} T.~Tao, \textit{estimates: a lightweight proof assistant for inequalities and asymptotic estimates}, software, \url{https://github.com/teorth/estimates}, 2025.
+\bibitem{deMoura2021} L.~de~Moura et al., \textit{The Lean 4 Theorem Prover and Programming Language}, CADE-28, LNCS \textbf{12699}, Springer (2021).
+\end{thebibliography}
+
+\end{document}
