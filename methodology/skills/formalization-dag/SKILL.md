@@ -234,3 +234,12 @@ because `atkinLehnerLin` in the FLT artifact already ships a ℂ-linear operator
 `ETA-01` (Ligozat's criterion) routed to **paper**: Mathlib ships `DedekindEta.lean` but has zero
 `EtaQuotient`/`Ligozat` occurrences, and the FLT artifact's `Ligozat*` hits are namespace labels on
 modular-unit machinery, not the modularity criterion.
+
+## 8. Inherited blockers decay *(run-4 addition)*
+
+An agent handed a "known blocker" re-verifies it before building on it — with case-insensitive
+search and every plausible spelling. One inherited blocker in run 3 was refuted within the same run
+(`orderAt` vs `analyticOrderAt`, LL-20), turning an assumed obstruction into a proved theorem.
+Retracting a blocker is a result; report it as loudly as confirming one. Conversely, an obstruction
+that survives re-verification is a deliverable: keep the node `blocked` with `lean_name: null` —
+the absence of a declaration *is* the content (LL-21).

@@ -469,3 +469,35 @@ about the past.
 
 **Rule.** Claims quantified over the whole library ("no axioms", "no sorries") are checked over the
 whole library, not over the modules the paper is about — or else scoped to what was checked.
+
+## LL-23 — Five versions in one day: corrections shipped serially because checks ran after publishing *(2026-09-07)*
+
+The eta preprint went v1→v5 in a single day. Each version was a correction the *previous* publish
+step could have caught: v2 stamped the DOI, v3 fixed a stale reproducibility caveat, v4 answered a
+review, v5 fixed v4's own errors — and v5 still shipped a wrong axiom count ("five" of six; the
+survey used `head -5` and truncated). The pattern: every check I knew how to run existed, but they
+ran *reactively*, after each publish, one finding at a time. Version history is cheap on Zenodo but
+churn is not free — each version is a permanent record, and a reader comparing v1 to v5 sees a
+paper that could not state its own axiom count.
+
+**Tactic (implemented).** `scripts/paper_gate.py` — one command, 25 checks, exit nonzero blocks
+publication. It re-runs the build, recomputes every numeric claim from the artifact at gate time,
+verifies code fidelity in both directions, resolves every cited Lean name (case-insensitively),
+scans the whole library for undisclosed axioms against an explicit allowlist, requires the negative
+controls to fail, and requires page 1 to declare review status. **On its very first run it caught
+the sixth axiom** that three review passes had missed. Rule: no artifact leaves this programme
+without a green gate, and new failure modes become new gates in the same script, not prose.
+
+## LL-24 — A timeout on an irreversible action is not a failure report *(2026-09-07)*
+
+Publishing v5, the Zenodo `newversion` POST returned **HTTP 504**. A gateway timeout means the
+*response* was lost, not that the *request* failed — the deposition could have been created
+server-side. Retrying blindly would have produced a duplicate draft; the last duplicate-deposition
+incident (LL-14) ended with a permanently wrong DOI in two PDFs. The correct move, taken this time:
+**read the server state first** (list depositions, look for an orphan draft), and only retry once
+the state shows the original never landed.
+
+**Rule.** After an ambiguous failure (timeout, dropped connection, 5xx) of any non-idempotent or
+irreversible call — minting, posting, pushing, sending — the next action is a *read*, never a
+retry. Design publication scripts so the create step is separately checkable from the publish step,
+which the `--deposition` guard already forces.

@@ -215,3 +215,15 @@ it, in both directions, every build:
 Text extraction and rendering catch disjoint defect classes — extraction misses frame overflow,
 rendering cannot tell you which codepoint is present. Run both and settle disagreements with
 `hex(ord(c))`. See the `scientific-publication` skill for the gate.
+
+## Whole-library claims, and counts that survive versions *(run-4 additions)*
+
+A claim quantified over the library ("no axioms", "no sorries") is checked over the **whole
+library** — `grep -rnE '^\s*axiom '` with no `head`, comments stripped for sorries — or scoped in
+the text to exactly what was checked. A truncated listing (`| head -5`) published a wrong axiom
+count that survived three reviews (LL-22/23).
+
+Numbers in a paper are never copied forward between versions. Each is recomputed from the artifact
+by `scripts/paper_gate.py` at publication time; a count measured once is a claim about the past.
+The footprint split specifically must be parsed multiline-aware — `#guard_msgs` info strings wrap,
+and a single-line grep silently undercounts (370 vs the true 385).

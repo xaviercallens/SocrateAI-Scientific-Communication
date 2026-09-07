@@ -360,9 +360,10 @@ kernel-checked $A1$.
 (\lean{EtaQuotient}, \lean{EtaQuotientCuspOrder}, \lean{EtaQuotientCuspTheta},
 \lean{EtaQuotientModularity}, \lean{EtaQuotientPrimeLevel}). There are no \lean{sorry} placeholders,
 and the five eta modules declare no axioms. (One legacy module elsewhere in the library,
-\lean{Generated/BlueprintSkeleton.lean}, declares five vacuous \lean{axiom ... : True} postulates
+\lean{Generated/BlueprintSkeleton.lean}, declares six vacuous \lean{axiom ... : True} postulates
 from an early scaffold; they are imported nowhere, and the enforced footprints below prove that no
-guarded theorem depends on them.) Following~\cite{FLT2026}, the axiom footprint is enforced rather than
+guarded theorem depends on them. An earlier version of this sentence said five --- the count came
+from a truncated listing, and is now recomputed mechanically at every build of this paper.) Following~\cite{FLT2026}, the axiom footprint is enforced rather than
 reported: \lean{FinalCheck.lean} carries 391 \texttt{\#guard\_msgs in \#print axioms} guards over
 389 distinct theorems, so a widened footprint is a compile error; 385 report exactly
 $[\texttt{propext},\ \texttt{Classical.choice},\ \texttt{Quot.sound}]$, one the strictly smaller
@@ -396,6 +397,7 @@ artifact; see \texttt{BUILDING.md}. Cite this preprint through its concept
 DOI~\cite{ThisWork}, which resolves to the newest version. Mirrored at
 \url{https://huggingface.co/datasets/callensxavier/socrateai-eta-quotients}.
 
+% lean-external: LigozatUnitAL LigozatUnitEngine modularUnitSeries sharpUnit*
 \section{Related work and prior art}
 
 Mathlib has no eta-quotients. The Fermat's Last Theorem artifact~\cite{FLT2026} contains

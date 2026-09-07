@@ -170,3 +170,26 @@ version is a genuine widening of audience, not a formality.
 Step 5 comes **after** step 4 and forces a rebuild. Plan for it: the DOI cannot be in the PDF that
 the DOI is minted from, unless you reserve and publish the same deposition — which is exactly the
 sequence `--deposition` exists to enforce.
+
+## 9. The gate, and ambiguous failures *(run-4 additions)*
+
+**No publish without a green gate.** `scripts/paper_gate.py <paper.tex>` runs ~25 mechanical checks
+— build, sorries, library-wide axiom scan vs allowlist, guard-footprint split (multiline-aware),
+negative controls must fail, DAG, LaTeX fatals/refs/overfull, code fidelity both directions,
+case-insensitive Lean-name resolution, **every numeric claim recomputed from the artifact at gate
+time**, secret scan, page-1 review-status declaration. Exit nonzero blocks publication. History:
+the eta preprint went v1→v5 in one day because these checks ran reactively after each publish; the
+gate's first-ever run caught a sixth undisclosed axiom that three review passes missed (LL-23).
+When a new failure mode appears, add a gate for it in the same commit as the fix — a countermeasure
+that lives in prose repeats.
+
+**A timeout on an irreversible call is not a failure report (LL-24).** HTTP 504 / dropped
+connection on a mint, post, or push means the *response* was lost — the request may have landed.
+Never retry blindly: the next action is a **read** (list depositions, check the ref, query the
+record), and only retry once the state shows the original never arrived. This is why create and
+publish are separate, separately checkable steps.
+
+**Revision text is new text (LL-22).** Prose written to answer a reviewer gets the same adversarial
+pass as anything generated: formula against the cited source, instances recomputed mechanically. Two
+of v4's errors were introduced *by the revision itself*, in the unformalized narrative no machine
+checks.
