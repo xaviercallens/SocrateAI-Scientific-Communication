@@ -385,3 +385,62 @@ paper. Its output decides *whether the paper exists*, and it costs a few searche
 at the pinned commit, every Lean development in the intended bibliography, and a GitHub-wide
 `language:lean` search. Record the corpus and the date; coverage is evidence, never proof.
 Unchecked corpora — Lean Zulip, mathlib4 open PRs, other proof assistants — are named as unchecked.
+
+---
+
+# Run 3 — eta-quotients, and a bounded result *(2026-09-07)*
+
+## LL-20 — A case-sensitive grep manufactured an absence *(2026-09-07)*
+
+A proving agent was handed two blockers. It confirmed one and **refuted the other**, correctly, and
+the refutation is the lesson: `grep -rl 'orderAt' Mathlib` returns **0 files**, so the order-of-
+vanishing machinery was declared missing. `grep -rli 'orderat'` returns **19**. The declarations are
+`analyticOrderAt` and `meromorphicOrderAt` — camelCase with a capital `O`. Mathlib in fact ships
+`Analysis/Analytic/Order.lean`, `Analysis/Meromorphic/Order.lean`,
+`NumberTheory/ModularForms/Cusps.lean` (`IsCusp`, `CuspOrbits`, `widthInfty`) and
+`QExpansion.lean` (`cuspFunction`, `qExpansion`).
+
+Because the agent re-ran the search instead of inheriting the conclusion, the cusp-order statement
+at infinity became provable and *was* proved, rather than being written off as obstructed.
+
+**Rule.** A zero result from a **case-sensitive** grep on a lowercase-initial camelCase name is not
+evidence of absence. Every absence claim in this programme uses `grep -ri`, and where the concept
+could be spelled several ways, every spelling is tried. This applies retroactively to gate zero:
+the corpus check is only as strong as its case handling.
+
+**Rule.** An agent that is handed a "known blocker" re-verifies it before building on it. Inherited
+conclusions decay; this one was wrong within a single run. Retracting a blocker is a result and
+should be reported as loudly as confirming one.
+
+## LL-21 — The obstruction was the deliverable *(2026-09-07)*
+
+F3.2 did not prove Ligozat's criterion, and that is the honest and correct outcome. What landed:
+
+- **Full Ligozat transformation law for `N ≤ 4`** — `ligozat_of_le_four`: given the two mod-24
+  congruences and the weight condition, `f(γz) = w(γ)·(cz+d)^k·f(z)` on *all* of `Γ₀(N)`, with the
+  character pinned at `T`, at `V = W_N T W_N⁻¹`, and at `−I`, and those three shown to generate.
+  The character is identified as Ligozat's Kronecker symbol.
+- **A precisely named obstruction for general `N`.** The multiplier is
+  `w(γ) = exp((πi/12)·per(γ))` where `per` is the period cocycle of the weight-2 quasi-modular
+  combination `Σ r_δ δ E₂(δτ)` — exactly the integration constant that both the `logDeriv` route and
+  the 24th-power route erase. For a single `η` that period function *is* Rademacher's `Φ`, whose
+  non-coboundary content is the Dedekind sum `s(d,|c|)`. Evaluating the multiplier on one hyperbolic
+  element of `Γ₀(11)` is therefore *equivalent* to evaluating a Dedekind sum. Every disguise tried —
+  Atkin–Lehner conjugation, theta/Poisson, Wohlfahrt level-24 — reduced back to it.
+
+This is worth more than a shakier general theorem, and it is directly actionable: it names the
+**minimal Mathlib addition** that would unlock the general case, in ascending strength — the
+Dedekind sum plus reciprocity; then Rademacher's `Φ` with its cocycle law; then the
+Petersson–Rademacher multiplier. And it observes that `Φ` is best built as the period of `E₂` using
+the `E2_slash_action`/`D2` machinery **already in Mathlib**, which makes it the cleanest upstream
+contribution available to us.
+
+**Rule.** When a target is out of reach, the deliverable is the obstruction, stated precisely enough
+that someone else could remove it. `ETA-01` stays `open` with `lean_name: null`; the obstruction node
+is `blocked` with `lean_name: null` because *the absence of a declaration is the content*. Never
+paper over a gap by weakening the headline statement without saying so.
+
+**Rule (scale discipline).** 519 declarations and 453 theorems arrived in one run. That is only
+trustworthy because the run-1 check was re-run on it: **14 of 453 are one-line `rfl`/`decide`** (3%,
+against run 1's 158/174 = 91%) and 45% quantify over a structure. Run that ratio on any large
+generated batch before believing it. Volume is a cost, not an achievement (LL-1).
