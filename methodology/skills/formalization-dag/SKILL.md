@@ -256,3 +256,25 @@ new proposal for a later run, not this one. The paper that results states plainl
 its predecessor's obstruction, cites the predecessor's concept DOI, and names the *next*
 obstruction if one is exposed — that arc (name it → remove it → name the next) is the programme's
 acceptance strategy in miniature.
+
+## 10. Search the missing-list, not just the proved-list *(run-5 addition, LL-25)*
+
+A paper's prior-art risk is not only in what it claims to prove. It is equally in what it claims is
+**absent** — the "future work", "limitations", and "what would remove it" sections. Those lists are
+prior-art queries and must be run as such, before publication.
+
+Run F4 was aborted because all three items of our published "what would remove it" list already
+existed in Lean, sorry-free, in a repository we had already searched — for *different* nouns. In
+run 3 we searched that repository for `Ligozat` and `etaQuotient` (correct, and it came out clean)
+and never for `dedekindSum`, the machinery §5 was about to request.
+
+**Two-axis search.** By name is not enough: the theorem that killed the run is called
+`ModularForm.eta_specialLinearGroup_smul`, so every `etaMultiplier` query returned nothing relevant.
+Also search by **statement shape** — files mentioning both key nouns (`eta` *and* `dedekindSum`),
+or the distinctive constant of the target identity. A negative from a name-based search is evidence
+about the name.
+
+**Read every hit.** A hit may be a namespace label (run 3's `LigozatUnitEngine` — correctly
+dismissed) or a special case (a level-11-specific multiplier pinned at a point — also correctly
+dismissed) or the actual general theorem. Only fetching and reading distinguishes them, and the
+first two dismissals are what makes the third finding credible.

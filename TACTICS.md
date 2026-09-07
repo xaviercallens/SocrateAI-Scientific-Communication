@@ -24,6 +24,7 @@ are dispatched).
 | 21 | — (obstruction as deliverable: a success) | Keep `open`/`blocked` nodes with `lean_name: null` | [G] DAG validator honours null |
 | 22 | Review-response text introduced errors; stale counts | Revision text gets the full pass; **every number recomputed at gate time** | [G] number-check gates recompute from artifact |
 | 22b | Whole-library claims checked on a subset | Library-wide axiom scan vs explicit allowlist | [G] axiom gate (caught postulate 6 on first run) |
+| 25 | Prior art found for the *missing* list, not the proved list | Gate zero searches the "what would remove it" list too, by name **and** statement shape | [W] GateZero prompt; [S] formalization-dag §7 |
 | 23 | Five versions in one day, checks ran after publishing | **One green gate before any publish**; new failure ⇒ new gate in the script | [G] `paper_gate.py` exit code |
 | 24 | 504 on an irreversible POST | Read server state before any retry | [S] publication skill §3 |
 

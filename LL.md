@@ -501,3 +501,46 @@ the state shows the original never landed.
 irreversible call — minting, posting, pushing, sending — the next action is a *read*, never a
 retry. Design publication scripts so the create step is separately checkable from the publish step,
 which the `--deposition` guard already forces.
+
+## LL-25 — The same repository refuted us for the third time, and the gate caught it for $2 *(2026-09-07)*
+
+Gate zero aborted run F4 seven minutes in. Its target — Dedekind sums, reciprocity, Rademacher's Φ,
+and the Petersson–Rademacher η multiplier — **already exists in Lean 4, sorry-free**, in
+`anthropics/fermats-last-theorem`: `dedekindSum_add_dedekindSum` (reciprocity),
+`rademacher_phi_step` (Φ = (a+d)/c − 12 s(d,c)), and `ModularForm.eta_specialLinearGroup_smul`,
+which is verbatim item (3) of our own published "what would remove it" list. A second independent
+repository has reciprocity and Φ too.
+
+This is the **third** time this one repository has refuted a novelty position of ours: the Fricke
+priority claim (LL-4/LL-13), the Ligozat check that came out clean, and now the entire F4 scope.
+
+Two failures, one on each side of the same coin.
+
+**We searched FLT for the wrong nouns.** In run 3 we searched it for `Ligozat` and `etaQuotient`
+and correctly concluded the *criterion* was absent. We never searched it for `dedekindSum` — the
+machinery our own §5 was about to ask for. A prior-art check must cover the **things the paper says
+are missing**, not only the things it says it proved. Our §7 consequently told readers FLT's eta
+material "is about modular units", which was true of what we had looked at and false of the
+repository.
+
+**The abort agent then made the mirror-image error and got the right answer anyway.** It searched
+`etaMultiplier` / `eta multiplier`, got hits it dismissed as level-11-specific (correctly — they
+are), and reported item (3) as the surviving gap. The real theorem is named
+`eta_specialLinearGroup_smul`. Its conclusion ("abort") was right; its stated reason for the
+residual was wrong. I found the true file only by following a filename that appeared in a
+*different* query's results. **A negative from a name-based search is evidence about the name, not
+about the mathematics** — search by the *statement's shape* (here: any theorem mentioning both
+`eta` and `dedekindSum`) as well as by name.
+
+**What went right.** The gate cost one agent, 127k tokens, seven minutes, against a run scoped at
+~$250–400 and nine hours; it was structurally able to abort before any proving; and the finding is
+strictly good news for the mathematics — our obstruction analysis is *vindicated* (the FLT
+development needed exactly that machinery and built it), and general-N Ligozat is now nearer than
+when we published, because item (3) exists.
+
+**Rule.** Gate zero searches (i) what the paper claims to prove, and (ii) **everything the paper
+claims is missing** — the "future work" and "what would remove it" lists are prior-art queries, not
+prose. Run each by name *and* by statement shape, case-insensitively, and read every hit.
+
+**Rule.** When prior art is found for something already published, the correction is a new version
+that says what was wrong and what still stands — never a silent edit, never a deletion of the claim.

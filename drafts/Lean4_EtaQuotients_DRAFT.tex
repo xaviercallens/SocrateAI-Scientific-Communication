@@ -78,7 +78,9 @@ $w(\gamma) = \exp\!\left(\tfrac{\pi i}{12}\mathrm{per}(\gamma)\right)$ where $\m
 period cocycle of the weight-two quasi-modular combination $\sum_\delta r_\delta\,\delta\,E_2(\delta z)$;
 for a single $\eta$ this period function is Rademacher's $\Phi$, whose non-coboundary content is the
 Dedekind sum $s(d,|c|)$. Mathlib contains no Dedekind sums. We state the minimal Mathlib addition
-that would remove the obstruction. The development is 519 declarations in 8117 lines across five
+that would remove the obstruction, and record that all three items of that list already exist in
+Lean~4 outside Mathlib (\S\ref{sec:related}), making the removal a porting task rather than new
+mathematics. The development is 519 declarations in 8117 lines across five
 modules, with no \lean{sorry}, and 391 build-failing axiom guards.
 \end{abstract}
 
@@ -331,7 +333,11 @@ presuppose the multiplier formula.
 
 \subsection*{What would remove it}
 
-In ascending strength, the minimal Mathlib additions are:
+In ascending strength, the minimal Mathlib additions are the following. \textbf{All three now
+exist in Lean~4}, sorry-free, in the Fermat's Last Theorem artifact (\S\ref{sec:related}); what
+Mathlib needs is therefore an \emph{upstreaming effort}, not new mathematics. We state the list as
+originally derived, because the derivation was independent and because it is the specification any
+port must meet:
 \begin{enumerate}[label=(\arabic*)]
   \item the Dedekind sum $s(d,c)$ and reciprocity;
   \item Rademacher's $\Phi : SL_2(\mathbb{Z})\to\mathbb{Z}$ with the cocycle law
@@ -341,9 +347,16 @@ In ascending strength, the minimal Mathlib additions are:
         for $c>0$.
 \end{enumerate}
 With (3), general-$N$ Ligozat becomes moderate bookkeeping on top of the argument already
-formalized here. We note that (2) is best constructed as the period of $E_2$ using the
-\lean{E2_slash_action} machinery \emph{already present} in Mathlib --- the analytic half exists ---
-which makes it the cleanest available upstream contribution.
+formalized here --- and (3) now exists, so that step is available to anyone willing to depend on
+the FLT artifact or to port it. We note that (2) is best constructed as the period of $E_2$ using
+the \lean{E2_slash_action} machinery \emph{already present} in Mathlib --- the analytic half exists
+--- which remains the cleanest route for a Mathlib-native version.
+
+That the FLT development needed precisely this machinery, and built it, is independent confirmation
+of the analysis above: the obstruction we identify is real and is not an artifact of our proof
+strategy. What changes is its cost. We had presented these three items as work to be done; they are
+work to be \emph{ported}. Our own attempt to build them was aborted at its prior-art gate on
+2026-09-07, on the evidence recorded here.
 
 \begin{remark}[A per-instance escape hatch]
 For a \emph{fixed} $N$ and $r$, the multiplier on a finite generating set is a ratio of convergent
@@ -397,15 +410,28 @@ artifact; see \texttt{BUILDING.md}. Cite this preprint through its concept
 DOI~\cite{ThisWork}, which resolves to the newest version. Mirrored at
 \url{https://huggingface.co/datasets/callensxavier/socrateai-eta-quotients}.
 
-% lean-external: LigozatUnitAL LigozatUnitEngine modularUnitSeries sharpUnit*
-\section{Related work and prior art}
+% lean-external: LigozatUnitAL LigozatUnitEngine modularUnitSeries sharpUnit* dedekindSaw dedekindSum dedekindSum_add_dedekindSum rademacher_phi_step ModularForm.eta_specialLinearGroup_smul
+\section{Related work and prior art}\label{sec:related}
 
 Mathlib has no eta-quotients. The Fermat's Last Theorem artifact~\cite{FLT2026} contains
-substantial eta-related material, but a direct reading shows it is about modular \emph{units} on
-modular function fields --- \lean{modularUnitSeries}, \lean{sharpUnit*}, over Laurent and Hahn
-series. Its three occurrences of ``Ligozat'' are \emph{namespace labels}
-(\lean{LigozatUnitEngine}, \lean{LigozatUnitAL}) on that machinery, not a formalization of the
-modularity criterion. A GitHub-wide \texttt{language:lean} search returns zero for
+substantial eta-related material of two distinct kinds, and an earlier version of this paper
+described only the first. \textbf{(a)} Modular \emph{units} on modular function fields ---
+\lean{modularUnitSeries}, \lean{sharpUnit*}, over Laurent and Hahn series; its three occurrences of
+``Ligozat'' are \emph{namespace labels} (\lean{LigozatUnitEngine}, \lean{LigozatUnitAL}) on that
+machinery, not a formalization of the modularity criterion. That reading stands.
+\textbf{(b)} \emph{The arithmetic of the eta multiplier itself} --- which we missed, and which is
+exactly what \S\ref{sec:obstruction} identifies as missing from Mathlib. The artifact defines the
+sawtooth and the Dedekind sum (\lean{dedekindSaw}, \lean{dedekindSum}), proves \textbf{reciprocity}
+(\lean{dedekindSum_add_dedekindSum}: $s(h,k)+s(k,h) = (h/k + k/h + 1/(hk))/12 - 1/4$ for coprime
+positive $h,k$), proves the Rademacher $\Phi$ descent step (\lean{rademacher_phi_step}, with
+$\Phi(\gamma) = (a+d)/c - 12\,s(d,c)$), and --- decisively --- proves the full
+Petersson--Rademacher transformation
+\[
+  \eta(\gamma z) \;=\; \exp\!\Bigl(\tfrac{\pi i}{12}\bigl(\tfrac{a+d}{c} - 12\,s(d,c)\bigr)\Bigr)\,
+  \sqrt{-i(cz+d)}\;\eta(z), \qquad c>0,
+\]
+as \lean{ModularForm.eta_specialLinearGroup_smul}. All are \lean{sorry}-free. This is items (1),
+(2) and (3) of \S\ref{sec:obstruction} --- the entire list --- already formalized in Lean~4. A GitHub-wide \texttt{language:lean} search returns zero for
 \texttt{Ligozat}. We did \emph{not} search the Lean Zulip or open mathlib4 pull requests, and we do
 not claim coverage there.
 
