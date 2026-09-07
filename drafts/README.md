@@ -1,14 +1,14 @@
 # Drafts — not for citation
 
-Everything in this directory is **unreviewed and unarchived**. No DOI is minted for anything here,
-deliberately: a DOI is a permanent citable identifier and a draft has not earned one.
+Everything in this directory is **unreviewed**. Items here have had no external referee; where a
+DOI exists it identifies a *preprint*, not a refereed paper.
 
 | Draft | Status |
 |---|---|
-| `Lean4_EtaQuotients_DRAFT` | Awaiting review. The Lean development compiles (3462 jobs, 0 errors, 0 `sorry`, 391 axiom guards); the *exposition* has not been refereed. |
+| `Lean4_EtaQuotients_DRAFT` | **Published as a preprint** — [10.5281/zenodo.22648098](https://doi.org/10.5281/zenodo.22648098), [HuggingFace](https://huggingface.co/datasets/callensxavier/socrateai-eta-quotients). Not peer reviewed. Lean development compiles (3462 jobs, 0 errors, 0 `sorry`, 391 axiom guards); the *exposition* has had no referee. |
 
-When a draft passes review it moves to `papers/`, gets a French version, and is deposited on Zenodo
-under the programme's concept DOI. Until then, cite the code, not the paper.
+When a draft passes review it moves to `papers/` and gets a French version for HAL. A preprint DOI
+records what was claimed and when; it is not evidence the claim was checked by anyone else.
 
 ## Standing caveat on the eta-quotient draft
 

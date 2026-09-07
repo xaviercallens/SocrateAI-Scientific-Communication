@@ -11,7 +11,7 @@
 \usepackage{fancyvrb}
 \usepackage{caption}
 \usepackage{draftwatermark}
-\SetWatermarkText{DRAFT}
+\SetWatermarkText{PREPRINT}
 \SetWatermarkScale{1.1}
 \SetWatermarkLightness{0.92}
 \captionsetup[figure]{name=Listing}
@@ -31,25 +31,25 @@
 \title{\textbf{Eta-Quotients in Lean 4}\\[0.3em]
   \large\textbf{Cusp Orders at Every Cusp, Ligozat's Criterion at Small Level,\\
   and a Named Obstruction at General Level}\\[0.8em]
-  \large\textcolor{BrickRed}{DRAFT --- not for citation, awaiting review}}
+  \large\textcolor{BrickRed}{PREPRINT --- not peer reviewed}}
 \author{
   Xavier Callens\thanks{Corresponding author: \texttt{callensxavier@gmail.com}} \\
   \small SocrateAI Research Initiative
 }
-\date{\today \\[0.6em]
-  \small \textcolor{BrickRed}{No DOI is minted for this draft. It is deliberately unarchived
-  until review closes.}}
+\date{\today\\[0.6em]
+  \small Archived at Zenodo: \href{https://doi.org/10.5281/zenodo.22648098}{\texttt{10.5281/zenodo.22648098}} (all versions)}
 
 \begin{document}
 \maketitle
 
 \begin{center}
 \fbox{\begin{minipage}{0.92\textwidth}
-\small \textbf{Status.} This is a \emph{draft}. It has not been refereed and no DOI has been
-minted for it. The Lean development it describes compiles and is axiom-audited, but the
-\emph{exposition} has not been reviewed, and one headline result is deliberately bounded
-(\S\ref{sec:ligozat}) with the general case left open behind an explicitly named obstruction
-(\S\ref{sec:obstruction}). Do not cite this version.
+\small \textbf{Status.} This is a \emph{preprint}. It has \textbf{not been peer reviewed}. The
+Lean development it describes compiles and is axiom-audited --- those claims are machine-checked and
+independently reproducible --- but the \emph{exposition} has had no external referee. One headline
+result is deliberately bounded (\S\ref{sec:ligozat}): Ligozat's transformation law is proved for
+$N \in \{1,2,3,4,5,7,13\}$ and \textbf{not} in general, the general case being blocked by the
+obstruction named in \S\ref{sec:obstruction}. Read the scope before citing the result.
 \end{minipage}}
 \end{center}
 
@@ -344,6 +344,7 @@ not claim coverage there.
 \bibitem{Mathlib2020} The mathlib Community, \textit{The Lean mathematical library}, CPP 2020.
 \bibitem{FLT2026} Anthropic, \textit{A formal proof of Fermat's Last Theorem in Lean 4}, software artifact, \url{https://github.com/anthropics/fermats-last-theorem}, 2026.
 \bibitem{Fricke2026} X.~Callens, \textit{A Mathlib-Idiomatic Formalization of the Fricke Involution and its Operator on Modular Forms}, Zenodo, 2026. \texttt{doi:10.5281/zenodo.22542571}.
+\bibitem{ThisWork} X.~Callens, \textit{Eta-Quotients in Lean 4} (this preprint), Zenodo, 2026. \texttt{doi:10.5281/zenodo.22648098}.
 \bibitem{deMoura2021} L.~de~Moura et al., \textit{The Lean 4 Theorem Prover and Programming Language}, CADE-28, LNCS \textbf{12699}, Springer (2021).
 \end{thebibliography}
 
