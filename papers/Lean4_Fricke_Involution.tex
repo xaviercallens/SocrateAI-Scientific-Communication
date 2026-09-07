@@ -390,10 +390,13 @@ a mirror with a dataset card is at
 Toolchain \texttt{leanprover/lean4:v4.32.2};
 Mathlib pinned at commit \texttt{905b9581} (2026-07-28);
 \texttt{lake build SocrateAI} completes in 3053 jobs (including the axiom-guard module).
-The build configuration is \emph{not} distributed: our \texttt{lakefile.lean} hard-codes absolute
-paths into a local Mathlib package pool, so the artifact is not yet buildable by a third party
-without supplying their own Mathlib at the pinned commit. A portable lakefile is outstanding work,
-and we flag it as the main obstacle to independent replication.
+The build configuration is distributed and portable: \texttt{lakefile.lean} requires Mathlib from
+git at the pinned revision above, \texttt{lean-toolchain} matches it, and no tracked file contains a
+machine-specific path. \texttt{git clone}, \texttt{lake exe cache get}, \texttt{lake build SocrateAI}
+reproduces the artifact; see \texttt{BUILDING.md}. Earlier versions of this note stated that the
+configuration was not distributed. That was true, and understated: the published
+\texttt{lakefile.lean} declared no Mathlib dependency at all and its \texttt{lean-toolchain} named a
+different compiler version, so a clean clone could not build. Both are fixed.
 The four modules total 27 declarations in 291 lines and import only
 \lean{Mathlib.NumberTheory.ModularForms.SlashActions},
 \lean{Mathlib.NumberTheory.ModularForms.CongruenceSubgroups},

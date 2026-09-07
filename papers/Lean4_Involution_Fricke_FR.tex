@@ -369,11 +369,14 @@ Les quatre modules totalisent 27 déclarations en 291 lignes et n'importent que
 \lean{Mathlib.NumberTheory.ModularForms.CongruenceSubgroups},
 \lean{Mathlib.NumberTheory.ModularForms.SlashInvariantForms} et
 \lean{Mathlib.NumberTheory.ModularForms.Basic}.
-La configuration de compilation n'est \emph{pas} distribuée : notre \texttt{lakefile.lean} code en
-dur des chemins absolus vers un dépôt local de paquets Mathlib, de sorte que l'artefact n'est pas
-encore compilable par un tiers sans qu'il fournisse sa propre copie de Mathlib au commit indiqué.
-Un \texttt{lakefile} portable reste à écrire, et nous le signalons comme l'obstacle principal à une
-réplication indépendante.
+La configuration de compilation est distribuée et portable : \texttt{lakefile.lean} requiert Mathlib
+depuis git à la révision indiquée ci-dessus, \texttt{lean-toolchain} lui correspond, et aucun fichier
+suivi ne contient de chemin propre à une machine. \texttt{git clone}, \texttt{lake exe cache get},
+\texttt{lake build SocrateAI} reproduit l'artefact ; voir \texttt{BUILDING.md}. Les versions
+antérieures de cette note indiquaient que la configuration n'était pas distribuée. C'était exact, et
+en deçà de la réalité : le \texttt{lakefile.lean} publié ne déclarait aucune dépendance à Mathlib et
+son \texttt{lean-toolchain} nommait une autre version du compilateur, de sorte qu'un clone propre ne
+pouvait pas compiler. Les deux points sont corrigés.
 
 \section{Travaux apparentés}\label{sec:related}
 

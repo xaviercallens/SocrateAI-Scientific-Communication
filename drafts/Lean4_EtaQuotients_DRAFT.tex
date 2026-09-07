@@ -301,6 +301,18 @@ only on proved nodes. \textbf{The node \lean{ETA-01}, Ligozat's criterion in gen
 \lean{open} with \lean{lean_name: null}}, and the obstruction node is \lean{blocked} with
 \lean{lean_name: null} --- for that node the absence of a declaration \emph{is} the content.
 
+\paragraph{Artifact.}
+Repository \url{https://github.com/xaviercallens/SocrateAI-Lean-Lib}; modules
+\texttt{Lean/SocrateAI/ModularForms/EtaQuotient*.lean}, axiom guards in
+\texttt{Lean/SocrateAI/FinalCheck.lean}, dependency graph in \texttt{dag/}. Toolchain
+\texttt{leanprover/lean4:v4.32.2}; Mathlib pinned at
+\texttt{905b95818eb32af7874a58b427f50c1711a5e96c} (2026-07-28), which is the revision every theorem
+here was checked against. The build configuration is portable --- \texttt{lakefile.lean} requires
+Mathlib from git at that revision and no tracked file contains a machine-specific path --- so
+\texttt{git clone}, \texttt{lake exe cache get}, \texttt{lake build SocrateAI} reproduces the
+artifact; see \texttt{BUILDING.md}. Mirrored at
+\url{https://huggingface.co/datasets/callensxavier/socrateai-eta-quotients}.
+
 \section{Related work and prior art}
 
 Mathlib has no eta-quotients. The Fermat's Last Theorem artifact~\cite{FLT2026} contains
