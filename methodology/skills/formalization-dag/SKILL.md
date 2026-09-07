@@ -243,3 +243,16 @@ search and every plausible spelling. One inherited blocker in run 3 was refuted 
 Retracting a blocker is a result; report it as loudly as confirming one. Conversely, an obstruction
 that survives re-verification is a deliverable: keep the node `blocked` with `lean_name: null` —
 the absence of a declaration *is* the content (LL-21).
+
+## 9. Obstruction-removal runs *(run-5 preparation)*
+
+When a run exists to remove an obstruction a previous paper named, **the prior paper's "what would
+remove it" section is the specification**. The comparator's reference statements are the promises
+made there, verbatim — item (1), item (2), item (3) — and the run's success criterion is
+mechanical: the DAG node that was `open`/`blocked` behind the obstruction (here `ETA-01`) flips to
+`proved` with a resolving `lean_name`. Scope discipline follows: anything not needed to keep those
+exact promises (the Atkin–Lehner family, half-integer-weight machinery, sharper error terms) is a
+new proposal for a later run, not this one. The paper that results states plainly that it closes
+its predecessor's obstruction, cites the predecessor's concept DOI, and names the *next*
+obstruction if one is exposed — that arc (name it → remove it → name the next) is the programme's
+acceptance strategy in miniature.

@@ -227,3 +227,30 @@ Numbers in a paper are never copied forward between versions. Each is recomputed
 by `scripts/paper_gate.py` at publication time; a count measured once is a claim about the past.
 The footprint split specifically must be parsed multiline-aware — `#guard_msgs` info strings wrap,
 and a single-line grep silently undercounts (370 vs the true 385).
+
+## Sign-heavy classical identities: decide-pins first *(run-5 preparation)*
+
+Dedekind reciprocity, Rademacher's Φ, and multiplier formulas are floor-and-sign case analyses —
+the class of statement where a green build most easily proves the wrong convention (LL-1's failure
+mode, in its analytic-number-theory form). Discipline:
+
+1. **Pins before proofs.** Before attempting the general statement, prove 6+ explicit numeric
+   instances by `decide`/`norm_num` as separate guarded lemmas, with values computed independently
+   (a python one-liner in the docstring). A failing pin means the *general statement* is wrong —
+   fix the statement, never the pin.
+2. **`c > 0` first.** State the positive-`c` case, derive `c < 0` via `−I`, treat `c = 0`
+   (parabolic) separately. Mixed-sign statements multiply the case analysis and hide convention
+   errors.
+3. **One Φ, named.** Apostol's Φ (`(a+d)/c − 12·sign(c)·s(d,|c|)`, cocycle law with
+   `−3·sign(c_A c_B c_AB)`) and the Rademacher symbol Ψ (`Φ − 3·sign(c(a+d))`, conjugation-invariant)
+   are different functions; conflating them under one name shipped a published error (LL-22).
+   Every declaration says which it is.
+
+## Half-integer weight: the csqrt idiom, not a new slash *(run-5 preparation)*
+
+Mathlib states η's S-transformation as `η(−1/z) = (√i)⁻¹·√z·η(z)` with `Complex.sqrt`
+(`Discriminant.lean`, `eta_comp_eq_csqrt_I_inv`) — a plain equation, **no weight-1/2 slash
+action**. Follow that idiom for any η-multiplier work: state multipliers as explicit equations with
+`csqrt` on the principal branch. Introducing metaplectic/half-integer-weight slash machinery is a
+research project of its own (it is the expected named obstruction for the level-12 paper) and is
+out of scope for any run that has not explicitly gate-zeroed it.
