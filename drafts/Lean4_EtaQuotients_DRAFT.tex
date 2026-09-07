@@ -5,6 +5,7 @@
 \setmonofont{DejaVu Sans Mono}[Scale=0.85]
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{amsmath, amssymb, amsthm}
+\usepackage{xurl}
 \usepackage{hyperref}
 \usepackage[dvipsnames]{xcolor}
 \usepackage{enumitem}
@@ -15,6 +16,9 @@
 \SetWatermarkScale{1.1}
 \SetWatermarkLightness{0.92}
 \captionsetup[figure]{name=Listing}
+\emergencystretch=3em
+% long Lean identifiers and paths are unbreakable in \texttt; permit breaks after / and _
+\newcommand{\brk}{\discretionary{}{}{}}
 \newcommand{\lean}[1]{\ifmmode\text{\ttfamily\detokenize{#1}}\else{\ttfamily\detokenize{#1}}\fi}
 
 \definecolor{indigo}{rgb}{0.29, 0.0, 0.51}
@@ -157,9 +161,27 @@ every $\gamma\in SL_2(\mathbb{Z})$, writing $c = \gamma_{10}$,
 \]
 \end{theorem}
 
+\begin{figure}[h]
+\begin{Verbatim}[frame=single,fontsize=\footnotesize,samepage=true]
+def etaQuotientRawOrder (N : ℕ) (r : EtaExp) (c : ℤ) : ℚ :=
+  (∑ δ ∈ N.divisors, ((Int.gcd c (δ : ℤ) : ℚ) ^ 2 * (r δ : ℚ)) / (δ : ℚ)) / 24
+
+theorem etaQuotient_cusp_order (N : ℕ) (r : EtaExp) {k : ℤ}
+    (hk : ∑ δ ∈ N.divisors, r δ = 2 * k) (γ : SL(2, ℤ)) :
+    (fun z : ℍ => ‖(etaQuotientH N r ∣[k] ((γ : SL(2, ℤ)) : GL (Fin 2) ℝ)) z‖)
+      =Θ[UpperHalfPlane.atImInfty]
+      fun z : ℍ => Real.exp (-2 * π * ((etaQuotientRawOrder N r (γ 1 0) : ℚ) : ℝ) * z.im) := by
+\end{Verbatim}
+\caption{The raw cusp order, and Theorem~\ref{thm:theta}. The two-sided bound is Mathlib's
+\lean{Asymptotics.IsTheta} at the filter \lean{UpperHalfPlane.atImInfty}, written
+\lean{=Θ[·]}; no approach region appears because that filter constrains only
+$\mathrm{Im}\,z$.}
+\end{figure}
+
 Two features deserve emphasis. There is \emph{no} congruence hypothesis and \emph{no}
 $\Gamma_0(N)$-membership hypothesis: the asymptotic holds for every $\gamma$ in the full modular
-group. And the $\Theta$ is taken along \lean{atImInfty}, which constrains only $\mathrm{Im}\,z$;
+group. And the $\Theta$-relation is taken along the filter \lean{atImInfty}, which constrains
+only $\mathrm{Im}\,z$;
 the statement is therefore uniform in $\mathrm{Re}\,z$ and no approach region is assumed.
 
 \begin{remark}[The width normalisation --- our specification was wrong]\label{rem:width}
@@ -179,7 +201,9 @@ $f = (\eta(z)\eta(2z))^{12}$ satisfies $\lVert f\vert_{12}S\rVert \asymp \exp(-3
 \end{remark}
 
 \begin{theorem}[The cusp $\infty$, in Mathlib's own language]\label{thm:infty}
-\lean{meromorphicOrderAt_cuspFunction_eq_cuspOrder_infty}. For every $N$, every $r$, and every
+\leavevmode\\
+\lean{meromorphicOrderAt_cuspFunction_eq_cuspOrder_infty}.\\
+For every $N$, every $r$, and every
 $m\in\mathbb{Z}$ with $24m = \sum_{\delta\mid N}\delta\,r_\delta$,
 \[
   \mathrm{meromorphicOrderAt}\bigl(\mathrm{cuspFunction}_1(f)\bigr)(0) \;=\; m,
@@ -188,8 +212,8 @@ and $m = \mathrm{ord}(N,r,N)$, Ligozat's value at $d=N$.
 \end{theorem}
 
 This uses Mathlib's own notion of order, its own cusp function, and its own width
-($\lean{strictWidthInfty}\,\Gamma_0(N) = 1$); we introduce no competing notion of ``order at a
-cusp''. There is no positivity and no holomorphy hypothesis --- the order may be negative.
+(\lean{strictWidthInfty} of $\Gamma_0(N)$ is $1$); we introduce no competing notion of
+``order at a cusp''. There is no positivity and no holomorphy hypothesis --- the order may be negative.
 
 \section{Ligozat's transformation law at small level}\label{sec:ligozat}
 
@@ -211,6 +235,40 @@ involution from the companion development~\cite{Fricke2026}, which is where that
 separate argument pins it at $-I$. For $N\le 4$ those three elements generate $\Gamma_0(N)$, by a
 Euclidean descent, so the character is determined and the congruences are upgraded from
 ``conditions at two generators'' to the transformation law on the whole group.
+
+\begin{figure}[h]
+\begin{Verbatim}[frame=single,fontsize=\footnotesize,samepage=true]
+noncomputable def etaQuotientModularForm {N : ℕ} (hN : 0 < N) (hN4 : N ≤ 4) (r : EtaExp) {k : ℤ}
+    (hk : ∑ δ ∈ N.divisors, r δ = 2 * k) (h1 : LigozatCongr1 N r) (h2 : LigozatCongr2 N r)
+    (hke : Even k)
+    (hbd : ∀ γ : SL(2, ℤ), IsBoundedAtImInfty ((etaQuotientH N r) ∣[k] γ)) :
+    ModularForm (Gamma0 N) k where
+  toFun := etaQuotientH N r
+  slash_action_eq' := etaQuotientH_slash_of_le_four hN hN4 r hk h1 h2 hke
+  holo' := mdiff_etaQuotientH N r
+  bdd_at_cusps' hc := isBoundedAt_of_bdd_SL2Z r hbd hc
+\end{Verbatim}
+\caption{The eta-quotient as a term of Mathlib's bundled \lean{ModularForm}, for $N\le 4$ and even
+$k$. Ligozat's condition (iii) enters as the hypothesis \lean{hbd}; see
+Remark~\ref{rem:bundled}.}
+\end{figure}
+
+\begin{remark}[The bundled \lean{ModularForm}, and what condition (iii) costs]\label{rem:bundled}
+For $N\le 4$ and \emph{even} $k$ the eta-quotient is a term of Mathlib's bundled
+\lean{ModularForm (Gamma0 N) k}: \lean{etaQuotientModularForm}, whose three fields are the
+transformation law of Theorem~\ref{thm:le4}, holomorphy, and boundedness at the cusps. So the
+assembly is done, not outstanding --- but it takes Ligozat's condition (iii) as the hypothesis
+\lean{hbd}, boundedness of every $SL_2(\mathbb{Z})$-translate at $i\infty$, rather than deriving it
+from non-negativity of the cusp orders. Deriving it needs the order of vanishing at a
+\emph{general} cusp, and that is the obstruction of \S\ref{sec:obstruction} again: the same
+missing multiplier. Theorem~\ref{thm:theta} supplies the analytic content at every cusp, so what is
+missing is the bridge from a $\Theta$-asymptotic to \lean{IsBoundedAtImInfty} at a cusp whose
+width is not $1$ --- API, resting on an obstructed input.
+
+The even-$k$ hypothesis is not bookkeeping either. For odd $k$ the conclusion is \emph{false}: at
+$N=3$, $r_1=-3$, $r_3=9$ both congruences hold and $\sum r_\delta = 6 = 2\cdot 3$, yet the
+trivial-multiplier conclusion fails at $\gamma=-I$. That counterexample is formalized as a guard.
+\end{remark}
 
 \begin{theorem}[Genus-zero primes]\label{thm:primes}
 \lean{ligozat_of_prime}. The same conclusion holds for $p\in\{5,7,13\}$.
@@ -244,10 +302,17 @@ Rademacher's $\Phi$,
 \]
 whose non-coboundary content is exactly the Dedekind sum $s(d,|c|)$.
 
-For any level with $\mathrm{genus}(X_0(N))\ge 1$ --- $N=11$ and most $N\ge 17$ --- the group
-$\Gamma_0(N)$ has hyperbolic generators, and no soft argument evaluates $w$ there: on the free part
-of $\Gamma_0(N)^{\mathrm{ab}}$, $w$ is constrained only by $w^{24}=1$, and
-$\mathrm{Hom}(\Gamma_0(N),\mu_{24})$ is large. Evaluating $w$ in closed form on a single hyperbolic
+For any level with $\mathrm{genus}(X_0(N))\ge 1$ (for instance $N=11$, and most $N\ge 17$) the
+group $\Gamma_0(N)$ has hyperbolic generators, and no soft argument evaluates $w$ there. The reason
+is group-theoretic. A character into $\mu_{24}$ factors through the abelianization, and for these
+levels $\Gamma_0(N)^{\mathrm{ab}}$ has free factors of infinite order --- concretely, of rank
+$2\,\mathrm{genus}(X_0(N))$. On a generator of infinite order the only constraint a torsion
+relation such as $w^{24}=1$ can impose is that its image lies in $\mu_{24}$; it does not say
+\emph{which} root of unity. Equivalently $\mathrm{Hom}(\Gamma_0(N),\mu_{24})$ is large, and every
+element of it is consistent with the relations. Pinning the image therefore requires evaluating the
+period integral explicitly, which is what forces Dedekind sums into the argument. At small level the
+situation is the opposite and that is exactly why \S\ref{sec:ligozat} succeeds: $\Gamma_0(N)$ is
+generated by $-I$, $T$ and $V$, on each of which $w$ \emph{is} pinned. Evaluating $w$ in closed form on a single hyperbolic
 element of $\Gamma_0(11)$ is mathematically equivalent to evaluating a Dedekind sum. Every disguise
 we attempted reduces back to this: Atkin--Lehner conjugation reintroduces general eta transforms,
 theta/Poisson routes re-derive the same $24$th-root phases, and Wohlfahrt level-$24$ arguments
@@ -290,7 +355,7 @@ $[\texttt{propext},\ \texttt{Classical.choice},\ \texttt{Quot.sound}]$. A negati
 a deliberately wrong footprint is kept outside the build and verified to fail, which is what
 establishes the guards are load-bearing rather than vacuous.
 
-Of the 453 theorems in the new modules, 14 --- three percent --- have a one-line
+Of the 453 theorems in the new modules, 14 (3\%) have a one-line
 \lean{rfl}/\lean{decide} proof, and 45\% quantify over a structure. We report this ratio because an
 earlier module in this project consisted of 174 numeral identities of which 158 were one-line, and
 carried no evidential weight; the check is now standard practice here for any large batch.
@@ -302,9 +367,9 @@ only on proved nodes. \textbf{The node \lean{ETA-01}, Ligozat's criterion in gen
 \lean{lean_name: null} --- for that node the absence of a declaration \emph{is} the content.
 
 \paragraph{Artifact.}
-Repository \url{https://github.com/xaviercallens/SocrateAI-Lean-Lib}; modules
-\texttt{Lean/SocrateAI/ModularForms/EtaQuotient*.lean}, axiom guards in
-\texttt{Lean/SocrateAI/FinalCheck.lean}, dependency graph in \texttt{dag/}. Toolchain
+Repository \url{https://github.com/xaviercallens/SocrateAI-Lean-Lib}; the five modules
+\texttt{EtaQuotient*.lean} under \texttt{Lean/\brk SocrateAI/\brk ModularForms/}, axiom guards in
+\texttt{Lean/\brk SocrateAI/\brk FinalCheck.lean}, dependency graph in \texttt{dag/}. Toolchain
 \texttt{leanprover/lean4:v4.32.2}; Mathlib pinned at
 \texttt{905b95818eb32af7874a58b427f50c1711a5e96c} (2026-07-28), which is the revision every theorem
 here was checked against. The build configuration is portable --- \texttt{lakefile.lean} requires
@@ -324,6 +389,17 @@ modularity criterion. A GitHub-wide \texttt{language:lean} search returns zero f
 \texttt{Ligozat}. We did \emph{not} search the Lean Zulip or open mathlib4 pull requests, and we do
 not claim coverage there.
 
+\paragraph{Other proof assistants.}
+The component we identify as obstructed has been mechanized elsewhere, which is evidence that the
+obstruction is a gap in Mathlib rather than a difficulty of principle. The Isabelle/HOL Archive of
+Formal Proofs contains \emph{Dedekind Sums}~\cite{AFPDedekind}, which defines
+$s(h,k) = \sum_{r=1}^{k-1}\frac{r}{k}\left(\left\{\frac{hr}{k}\right\}-\frac12\right)$ and proves
+reciprocity, and \emph{Rademacher's Series for the Partition Function}~\cite{AFPRademacher}, which
+uses that machinery in exactly the analytic setting where it arises here. Our
+\S\ref{sec:obstruction} therefore asks Mathlib for something Isabelle/HOL already has; the
+constructions there are a usable guide, and the existence of two independent formalizations of
+Dedekind sums is a reason to expect the Mathlib addition to be routine rather than research.
+
 \section{Limitations}
 
 \begin{remark}[What is not done]
@@ -340,9 +416,10 @@ not claim coverage there.
         = \psi(N)$. No index formula for $\Gamma_0$ exists anywhere in Mathlib. The definitions
         \lean{numCusps} and \lean{dedekindPsi} in this development carry those classical readings
         but do not prove them.
-  \item Theorems~\ref{thm:le4} and~\ref{thm:primes} give the transformation law; assembling it with
-        the cusp-order positivity condition into membership in a bundled \lean{ModularForm} is not
-        yet done.
+  \item Ligozat's condition (iii) is not \emph{derived} from the cusp-order formula. The bundled
+        \lean{ModularForm} exists (Remark~\ref{rem:bundled}) but takes boundedness as a hypothesis;
+        discharging it from non-negativity of the cusp orders needs the order at a general cusp,
+        which is (b), which is the obstruction.
   \item That $\{-I,T,V\}$ \emph{cannot} generate $\Gamma_0(5)$ is cited, not proved.
 \end{enumerate}
 \end{remark}
@@ -356,6 +433,8 @@ not claim coverage there.
 \bibitem{Mathlib2020} The mathlib Community, \textit{The Lean mathematical library}, CPP 2020.
 \bibitem{FLT2026} Anthropic, \textit{A formal proof of Fermat's Last Theorem in Lean 4}, software artifact, \url{https://github.com/anthropics/fermats-last-theorem}, 2026.
 \bibitem{Fricke2026} X.~Callens, \textit{A Mathlib-Idiomatic Formalization of the Fricke Involution and its Operator on Modular Forms}, Zenodo, 2026. \texttt{doi:10.5281/zenodo.22542571}.
+\bibitem{AFPDedekind} M.~Eberl, A.~Bordg, L.~C.~Paulson, W.~Li, \textit{Dedekind Sums}, Archive of Formal Proofs, 2025. \url{https://www.isa-afp.org/entries/Dedekind_Sums.html}, formal proof development.
+\bibitem{AFPRademacher} M.~Eberl, L.~C.~Paulson, \textit{Rademacher's Series for the Partition Function}, Archive of Formal Proofs. \url{https://www.isa-afp.org/entries/Rademacher_Series.html}, formal proof development.
 \bibitem{ThisWork} X.~Callens, \textit{Eta-Quotients in Lean 4} (this preprint), Zenodo, 2026. \texttt{doi:10.5281/zenodo.22648098}.
 \bibitem{deMoura2021} L.~de~Moura et al., \textit{The Lean 4 Theorem Prover and Programming Language}, CADE-28, LNCS \textbf{12699}, Springer (2021).
 \end{thebibliography}
