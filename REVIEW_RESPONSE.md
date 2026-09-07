@@ -72,3 +72,46 @@ The reverse also happened, and it justifies the review. Adding the artifact para
 **246 pt overfull hbox** — the module path ran visibly off the right edge of page 6 — which no text
 extraction would have revealed and which I found only by rendering while checking the reviewer's
 items. It is fixed; the worst remaining overfull is 7.3 pt, with none above 10 pt.
+
+---
+
+# Addendum — internal adversarial pass (Fable, 2026-09-07), leading to v5
+
+A final internal review of v4, conducted against the artifact rather than the paper. It found four
+defects — two of them mathematical errors **introduced by the v4 revision itself**, i.e. by the
+edits responding to the external review. Reviewer-driven edits get the same adversarial pass as
+generated proofs from now on.
+
+1. **§5 conflated Dedekind–Rademacher's Φ with the Rademacher symbol Ψ.** The displayed formula
+   carried the `−3·sign(c(a+d))` term (that is Ψ, the conjugation-invariant homogenization) while
+   item (2) of "What would remove it" quoted the cocycle law
+   `Φ(AB) = Φ(A)+Φ(B) − 3·sign(c_A c_B c_AB)`, which holds for Apostol's Φ — the version *without*
+   the term. Same symbol, two different functions, in one section. Fixed: the display is now
+   Apostol's Φ (Thm 3.11 cited), with one sentence introducing Ψ as the homogenization that the
+   E₂-period computes over closed geodesics. The multiplier uses Φ; the cocycle law is now
+   consistent with its own display.
+
+2. **§5's abelianization-rank claim was wrong.** v4 said the free part of Γ₀(N)^ab has rank
+   `2·genus(X₀(N))`. The free rank is `2g + s − 1` (s = cusps): 3 for N = 11, not 2. Verified
+   mechanically for all nine levels the paper mentions. The corrected paragraph is sharper and
+   more honest: the T,V-route's first failure is **parabolic, not hyperbolic** — Γ₀(6) is
+   torsion-free of free rank three at genus zero, so the method stops at N = 6 for cusp-count
+   reasons before genus ever intervenes; from genus one on, 2g hyperbolic classes are out of reach
+   of any soft argument.
+
+3. **"370 report exactly [the three standard axioms]" undercounted.** The count came from a
+   single-line grep that misses wrapped info strings. True split across 389 guarded theorems:
+   **385** with the three standard axioms, **1** with the strictly smaller `[propext, Quot.sound]`,
+   **3** definitional guards depending on no axiom at all. The paper now states the full split and
+   the reason the earlier number was wrong.
+
+4. **"no project-local axioms" was false as stated.** The five eta modules declare none — but a
+   legacy scaffold elsewhere in the library (`Generated/BlueprintSkeleton.lean`) declares five
+   vacuous `axiom … : True` postulates. They are imported nowhere and no guard footprint mentions
+   them, so the eta results are untouched; the paper now scopes the claim precisely and discloses
+   the legacy axioms instead of blanket-asserting their absence.
+
+Also in v5: the Ligozat bibliography entry drops a page range that could not be verified against
+the source; the PDF metadata title no longer says "DRAFT"; the status box now says the version
+incorporates one external review and one internal pass, neither being venue peer review; and the
+Artifact paragraph cites the concept DOI explicitly.

@@ -444,3 +444,28 @@ paper over a gap by weakening the headline statement without saying so.
 trustworthy because the run-1 check was re-run on it: **14 of 453 are one-line `rfl`/`decide`** (3%,
 against run 1's 158/174 = 91%) and 45% quantify over a structure. Run that ratio on any large
 generated batch before believing it. Volume is a cost, not an achievement (LL-1).
+
+## LL-22 — The review response introduced its own errors *(2026-09-07)*
+
+The v4 revision — written specifically to answer an external review — introduced two mathematical
+errors that survived until a final internal pass: it conflated Apostol's Φ with the Rademacher
+symbol Ψ (displaying one function while quoting the other's cocycle law under the same name), and
+it asserted the free rank of `Γ₀(N)^ab` is `2·genus` when it is `2g + s − 1`. Both were in prose I
+added *while responding to feedback*, under time pressure to ship the revision, in the one part of
+the paper no machine checks — the unformalized obstruction narrative.
+
+The same pass caught two measurement errors of the same species as LL-17 and LL-20: a footprint
+count of 370 that was really 385 (single-line grep on wrapped info strings), and a "no
+project-local axioms" claim falsified by five vacuous legacy axioms in a module nobody had looked
+at (`grep -rnE '^\s*axiom '` over the whole library settled it in one command).
+
+**Rule.** Revision text answering a reviewer is *new* text and gets the full adversarial pass —
+formula-by-formula against the cited sources, instance-by-instance mechanically — before it ships.
+Being written in response to review confers no correctness.
+
+**Rule.** Every numeric claim in a paper is recomputed from the artifact at every version, by a
+script that handles wrapped/multiline output. A count measured once and copied forward is a claim
+about the past.
+
+**Rule.** Claims quantified over the whole library ("no axioms", "no sorries") are checked over the
+whole library, not over the modules the paper is about — or else scoped to what was checked.
