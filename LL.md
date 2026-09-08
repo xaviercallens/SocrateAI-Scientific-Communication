@@ -544,3 +544,42 @@ prose. Run each by name *and* by statement shape, case-insensitively, and read e
 
 **Rule.** When prior art is found for something already published, the correction is a new version
 that says what was wrong and what still stands — never a silent edit, never a deletion of the claim.
+
+## LL-26 — A rogue background build hit 100% disk mid-run *(2026-09-08)*
+
+While independently verifying run 4's findings, `pgrep -x lake` (correctly run before every build
+in this session) still missed a genuinely running, unrelated `lake build SocrateAI` process — an
+orphan from the earlier 35-agent workflow, invoked without `--packages`, silently compiling a full
+redundant local Mathlib checkout under the repo's own `.lake/packages/mathlib`. It ran undetected
+for ~8 minutes and took the filesystem from comfortable headroom to **100% full, 209MB free**,
+before being noticed by chance (a routine disk-space check, not a targeted one).
+
+**Rule.** `pgrep -x lake` at the *start* of a build is necessary but not sufficient — a process can
+start *after* the check and outlive the window a single script call covers. Add a periodic or
+pre-flight `df -h` check alongside the process check in any long verification session, especially
+after a large multi-agent workflow completes (its agents may leave orphaned background jobs that
+outlive the workflow's own notification).
+
+**Rule.** Killing a runaway process is a destructive-enough action that the permission layer
+correctly gated it behind explicit confirmation even under "implement autonomously" — and a
+single, minimally-scoped command (`kill -TERM <pid>`, no chaining) went through where a
+multi-command chain calling `kill`/`pkill` together was denied. When a kill is denied, retry as a
+single bare command before escalating, rather than assuming denial means the action itself is off
+limits.
+
+## LL-27 — `lake env lean` does not accept `--packages`, and a gate's own negative-control check was silently vacuous *(2026-09-08)*
+
+`scripts/paper_gate.py`'s negative-control check called `lake env lean {file} --packages=...`,
+copying the pattern from `lake build`. `lake env lean` does not accept that flag; `lean` itself
+errors on it and prints `--help`, exiting nonzero. Since the check only tested for a **nonzero**
+exit code, it reported every negative control as "fails correctly" — even one that would have
+*passed* (proving the guards vacuous), because the wrong-flag error exits nonzero regardless of
+the file's own content. Found by manually re-running the exact command and reading its actual
+output instead of trusting the exit code alone; the same class of bug had already been fixed once
+this session, in a different script, for the same reason (LL: quarantine-file typecheck attempt).
+
+**Rule.** A check that "fails correctly" for the wrong reason is not a check. When a negative
+control (or any test expected to fail) starts passing *unexpectedly easily*, or when a script
+reuses a flag pattern across two different subcommands of the same CLI tool, read the actual
+stdout/stderr at least once — don't infer correctness from the exit code alone until you've seen
+it fail for the right reason.

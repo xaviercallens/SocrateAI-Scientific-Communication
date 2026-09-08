@@ -16,15 +16,28 @@ the analytic side (`E2_slash_action`, the `D2` machinery in
 period cocycle of `E₂`. Building it that way rather than via an explicit Dedekind-sum formula is
 both more idiomatic and less work.
 
-## Before any PR: the blocker that applies to all three
+## Before any PR: the blocker that applied to all three — RESOLVED (commit 0b25c93)
 
-**Our `lakefile.lean` hard-codes two absolute paths** into a local Mathlib package pool
-(`/home/xavkal/xdev/SocrateAI-Scientific-Measure/lean/.lake/packages`). Nobody outside this machine
-can build the artifact. This is also the reproducibility defect both published papers concede.
+The lakefile used to hard-code two absolute paths into a local Mathlib package pool. Fixed:
+`lakefile.lean` now requires Mathlib from git at the pinned revision, and `lakefile.lean`,
+`lake-manifest.json`, `lean-toolchain` are committed. `BUILDING.md` documents the local-pool
+convenience override (`local-packages.json`, gitignored) separately from the portable committed
+config. Not yet independently verified by an actual from-scratch clean-clone build on a machine
+with enough disk for a fresh `lake exe cache get` — that remains the real test.
 
-Fix first: `require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "905b9581"`,
-and commit `lakefile.lean`, `lake-manifest.json` and `lean-toolchain`, which are currently excluded
-from the repository for exactly this reason. Verify by building in a clean clone, not in place.
+## Prior art discovered since (2026-09-08) — applies to PR-2 and PR-3, not just PR-1
+
+A follow-up run found that `anthropics/fermats-last-theorem` (Apache-2.0) already contains, sorry-
+free: `Definitions/Def_NumberTheory_DedekindSum.lean` (the Dedekind sum and 19 lemmas — **PR-2's
+core content is close to a verbatim match**, confirmed 21/21 declarations byte-identical after
+whitespace normalisation) and `Theorems/Thm_rademacher_phi_step.lean` (a Euclidean-descent step
+toward Φ, though not Φ itself as a named function with a cocycle law). See
+`Lean-Lib/ATTRIBUTION.md` for the full, file-by-file account, including what our own port added
+and what remains independently ours. **Any PR-2 or PR-3 submission must disclose this in the PR
+description and the module docstring** — the same standard PR-1's guideline already applied to the
+Fricke prior art. Apache-2.0 to Apache-2.0 (Mathlib's own licence) is licence-clean; a maintainer
+discovering unattributed near-identical text after merge is a much worse outcome than disclosing
+it up front.
 
 ## House rules (they will be enforced in review)
 

@@ -78,10 +78,15 @@ $w(\gamma) = \exp\!\left(\tfrac{\pi i}{12}\mathrm{per}(\gamma)\right)$ where $\m
 period cocycle of the weight-two quasi-modular combination $\sum_\delta r_\delta\,\delta\,E_2(\delta z)$;
 for a single $\eta$ this period function is Rademacher's $\Phi$, whose non-coboundary content is the
 Dedekind sum $s(d,|c|)$. Mathlib contains no Dedekind sums. We state the minimal Mathlib addition
-that would remove the obstruction, and record that all three items of that list already exist in
-Lean~4 outside Mathlib (\S\ref{sec:related}), making the removal a porting task rather than new
-mathematics. The development is 519 declarations in 8117 lines across five
-modules, with no \lean{sorry}, and 391 build-failing axiom guards.
+that would remove the obstruction. \textbf{Postscript (2026-09-08, \S\ref{sec:postscript}):}
+a follow-up effort has since built all three items independently in our own library, with
+attribution to prior art where used; this refutes our own prediction that item (3) alone would
+make general-$N$ Ligozat ``moderate bookkeeping,'' and narrows the obstruction to one named
+remaining node rather than removing it, which we report as an addendum, not as
+a revision of the results proved here. The development is 519 declarations in 8117 lines across five
+modules, with no \lean{sorry}, pinned by axiom guards in the library's shared
+\lean{FinalCheck.lean} (797 guards in total as of this printing; see \S\ref{sec:postscript}
+for why that file now also guards material outside this paper's own scope).
 \end{abstract}
 
 \noindent\textbf{MSC 2020:} 11F20, 11F11, 68V20.\quad
@@ -333,11 +338,7 @@ presuppose the multiplier formula.
 
 \subsection*{What would remove it}
 
-In ascending strength, the minimal Mathlib additions are the following. \textbf{All three now
-exist in Lean~4}, sorry-free, in the Fermat's Last Theorem artifact (\S\ref{sec:related}); what
-Mathlib needs is therefore an \emph{upstreaming effort}, not new mathematics. We state the list as
-originally derived, because the derivation was independent and because it is the specification any
-port must meet:
+In ascending strength, the minimal additions are:
 \begin{enumerate}[label=(\arabic*)]
   \item the Dedekind sum $s(d,c)$ and reciprocity;
   \item Rademacher's $\Phi : SL_2(\mathbb{Z})\to\mathbb{Z}$ with the cocycle law
@@ -346,17 +347,15 @@ port must meet:
         $\eta(\gamma z) = \exp\!\left(\pi i\left(\tfrac{a+d}{12c} - s(d,c) - \tfrac14\right)\right)\sqrt{cz+d}\;\eta(z)$
         for $c>0$.
 \end{enumerate}
-With (3), general-$N$ Ligozat becomes moderate bookkeeping on top of the argument already
-formalized here --- and (3) now exists, so that step is available to anyone willing to depend on
-the FLT artifact or to port it. We note that (2) is best constructed as the period of $E_2$ using
-the \lean{E2_slash_action} machinery \emph{already present} in Mathlib --- the analytic half exists
---- which remains the cleanest route for a Mathlib-native version.
-
-That the FLT development needed precisely this machinery, and built it, is independent confirmation
-of the analysis above: the obstruction we identify is real and is not an artifact of our proof
-strategy. What changes is its cost. We had presented these three items as work to be done; they are
-work to be \emph{ported}. Our own attempt to build them was aborted at its prior-art gate on
-2026-09-07, on the evidence recorded here.
+\textbf{This list, and what follows from it, is corrected in \S\ref{sec:postscript}.} A first draft
+of this paper claimed all three already existed, sorry-free, in the Fermat's Last Theorem
+artifact~\cite{FLT2026}, and predicted that item (3) alone would reduce general-$N$ Ligozat to
+``moderate bookkeeping.'' Both claims were checked by attempting the construction, and both were
+found wrong: item (2) does not exist upstream as a named function with the cocycle law above ---
+only a single Euclidean-descent \emph{step} does, from which $\Phi$ can be built but is not built
+there --- and item (3), once actually in hand, exposed a further genuine theorem rather than
+bookkeeping. See \S\ref{sec:postscript} for the corrected account, including what has since been
+proved.
 
 \begin{remark}[A per-instance escape hatch]
 For a \emph{fixed} $N$ and $r$, the multiplier on a finite generating set is a ratio of convergent
@@ -368,7 +367,8 @@ kernel-checked $A1$.
 
 \section{Verification status}
 
-\lean{lake build SocrateAI} completes in 3462 jobs with no errors. The development is
+\lean{lake build SocrateAI} --- the whole library's default target, now shared with the
+postscript's material --- completes in 3767 jobs with no errors. This paper's own development is
 519 declarations in 8117 lines across five modules
 (\lean{EtaQuotient}, \lean{EtaQuotientCuspOrder}, \lean{EtaQuotientCuspTheta},
 \lean{EtaQuotientModularity}, \lean{EtaQuotientPrimeLevel}). There are no \lean{sorry} placeholders,
@@ -377,12 +377,15 @@ and the five eta modules declare no axioms. (One legacy module elsewhere in the 
 from an early scaffold; they are imported nowhere, and the enforced footprints below prove that no
 guarded theorem depends on them. An earlier version of this sentence said five --- the count came
 from a truncated listing, and is now recomputed mechanically at every build of this paper.) Following~\cite{FLT2026}, the axiom footprint is enforced rather than
-reported: \lean{FinalCheck.lean} carries 391 \texttt{\#guard\_msgs in \#print axioms} guards over
-389 distinct theorems, so a widened footprint is a compile error; 385 report exactly
-$[\texttt{propext},\ \texttt{Classical.choice},\ \texttt{Quot.sound}]$, one the strictly smaller
-$[\texttt{propext},\ \texttt{Quot.sound}]$, and three (definitional guards) depend on no axiom at
-all. An earlier version of this paragraph said 370; that number was an artifact of counting the
-info strings with a single-line search, which misses the ones that wrap. A negative control asserting
+reported: \lean{FinalCheck.lean} carries 797 \texttt{\#guard\_msgs in \#print axioms} guards over
+795 distinct theorems (the library-wide total; \S\ref{sec:postscript} accounts for the material
+outside this paper's own scope), so a widened footprint is a compile error; 769 report exactly
+$[\texttt{propext},\ \texttt{Classical.choice},\ \texttt{Quot.sound}]$, two the strictly smaller
+$[\texttt{propext},\ \texttt{Quot.sound}]$, sixteen (definitional guards) depend on no axiom at
+all, and eight are \emph{inverted tripwires} --- guards whose EXPECTED footprint includes
+\lean{sorryAx}, asserting that a specific, DAG-tracked open or refuted statement still depends on
+one, so that a later accidental proof of it (or a silent weakening that lets it typecheck) fails
+the build rather than passing unnoticed (\S\ref{sec:postscript}). A negative control asserting
 a deliberately wrong footprint is kept outside the build and verified to fail, which is what
 establishes the guards are load-bearing rather than vacuous.
 
@@ -391,7 +394,8 @@ Of the 453 theorems in the new modules, 14 (3\%) have a one-line
 earlier module in this project consisted of 174 numeral identities of which 158 were one-line, and
 carried no evidential weight; the check is now standard practice here for any large batch.
 
-The statement-dependency graph (\lean{dag/theorems.jsonl}, 57 nodes, 51 proved, acyclic) is
+The statement-dependency graph (\lean{dag/theorems.jsonl}, 74 nodes, 66 proved, acyclic ---
+library-wide, per \S\ref{sec:postscript}) is
 machine-validated: every node marked proved must name a declaration that resolves and may depend
 only on proved nodes. \textbf{The node \lean{ETA-01}, Ligozat's criterion in general, remains
 \lean{open} with \lean{lean_name: null}}, and the obstruction node is \lean{blocked} with
@@ -445,6 +449,78 @@ uses that machinery in exactly the analytic setting where it arises here. Our
 \S\ref{sec:obstruction} therefore asks Mathlib for something Isabelle/HOL already has; the
 constructions there are a usable guide, and the existence of two independent formalizations of
 Dedekind sums is a reason to expect the Mathlib addition to be routine rather than research.
+
+\section{Postscript (2026-09-08): the obstruction, attempted}\label{sec:postscript}
+
+Section~\ref{sec:obstruction}'s "what would remove it" list was, in an earlier version of this
+paper, presented as already available upstream. A dedicated follow-up run attempted the
+construction directly: a first, unscoped attempt was correctly \emph{aborted at its own prior-art
+gate} when it found genuine Lean~4 material for all three items in the Fermat's Last Theorem
+artifact~\cite{FLT2026} --- but that finding was itself imprecise, as the second pass below
+corrects. A second, narrower run then ported and independently built the three items in this
+library, with attribution recorded declaration by declaration in the artifact's
+\texttt{ATTRIBUTION.md}.
+
+\paragraph{The corrected account of item (2).} FLT does \emph{not} contain Rademacher's $\Phi$ as a
+named function with the cocycle law stated in \S\ref{sec:obstruction}. It contains one Euclidean-
+descent \emph{step} relating $\Phi$ at a matrix to $\Phi$ at a smaller one, which is not the same
+statement and does not by itself give the function. Our own \lean{rademacherPhi} is defined
+directly from Apostol's closed form and its cocycle law is proved from our own reciprocity
+theorem, independently. This is item (2) genuinely built, not ported --- FLT gets us only partway
+there.
+
+\paragraph{What is now proved, sorry-free, in this library.} The Dedekind sum, its sawtooth, and
+nineteen supporting lemmas are a verbatim \textbf{port} of FLT's
+\texttt{Definitions/\brk Def\_NumberTheory\_DedekindSum.lean} (Apache-2.0; attributed). Reciprocity, the
+$\Phi$-descent step, and the Petersson--Rademacher multiplier itself are \textbf{statement-only
+ports} --- the theorem signatures match FLT's exactly, so a reader can compare term for term --- with
+proofs built independently against this library's own architecture, reusing the Fricke involution
+$W_N$ from the companion development~\cite{Fricke2026} for the multiplier's Euclidean-descent
+induction. None of FLT's proof text was available to the agent that wrote these proofs: it was
+fetched separately, for an unrelated \lean{sorry}-count check, in a different step of the run.
+
+\paragraph{The prediction was wrong, and here is why.} Item (3) in hand does \emph{not} reduce
+general-$N$ Ligozat to bookkeeping. What it buys is exactly the analytic layer: the multiplier
+becomes a closed-form exponential at every $\gamma$ with $c>0$, and the criterion becomes
+\emph{equivalent} to a single congruence mod $24$ in a quantity we call $\Phi_N(r,\gamma) =
+\sum_{\delta\mid N} r_\delta\,\Phi(\gamma_\delta)$ over the divisor-conjugated matrices. What
+remains is a genuine arithmetic theorem: a divisor-by-divisor quadratic-reciprocity assembly
+turning the numerator of one Dedekind sum into Ligozat's numerator $\delta$, together with an
+even-modulus companion to our own odd-weight Jacobi-symbol evaluation of $12c\,s(d,c)$. That
+theorem is not proved here; it is the one node, precisely named, that separates the present state
+from a closed proof of Ligozat's criterion at every level.
+
+\paragraph{What was proved instead.} The $c\le 0$ strata are closed \emph{at every $N$}: the
+multiplier's behaviour under $\gamma\mapsto-\gamma$ and the Kronecker character's behaviour under
+$d\mapsto-d$ both contribute the same sign, and they cancel. Combined with
+Theorem~\ref{thm:le4}, Ligozat's criterion is now proved in full, ending in a genuine
+\lean{ModularForm (Gamma0 N) k} term, for $0<N\le 4$. And a machine-checked \textbf{refutation}
+was found along the way: an earlier, easier-looking general-$N$ statement in this library asserted
+that Ligozat's congruences together with $12\mid k$ force a \emph{trivial} multiplier on all of
+$\Gamma_0(N)$. That statement is \textbf{false}. At $N=17$, $r=(r_1,r_{17})=(21,3)$, $k=12$,
+$\gamma=\left(\begin{smallmatrix}6&1\\17&3\end{smallmatrix}\right)\in\Gamma_0(17)$, every
+hypothesis holds and the multiplier is $-1$, not $1$ --- confirmed independently by a direct
+$4000$-term $\eta$-product evaluation and by three other routes agreeing to high precision. The
+false statement has been renamed, quarantined (its proof obligation is kept as a permanent,
+disclosed \lean{sorry} rather than deleted, so that the refutation has a fixed target), and removed
+from the library's default build target. That an easy generalization failed here is itself
+evidence for why the correct one --- via the Kronecker character, not a divisibility hypothesis ---
+is the theorem this paper's Theorem~\ref{thm:le4} and Theorem~\ref{thm:primes} actually prove.
+
+\paragraph{Net effect on the DAG.} Before this postscript, node \texttt{ETA-01} (Ligozat's
+criterion at general $N$) had three missing inputs. It now has one: the reciprocity-assembly
+theorem named above. Two new results close cleanly around it: the full $c\le 0$ reduction at
+every $N$, and Ligozat's criterion in full for $0<N\le 4$ as a genuine bundled modular form. The
+node itself remains \lean{open} with \lean{lean\_name: null}; we do not claim it, here or
+anywhere in this paper.
+
+\paragraph{On self-review.} Every technical claim in this postscript --- the $c\le 0$ sign
+cancellation, the $\Phi_N$ mod-$24$ equivalence, and the $N=17$ witness --- was checked against the
+artifact's own statement-dependency graph and, for the witness, against an independent numerical
+evaluation, before this text was allowed to stand; none was taken from a subagent's summary alone.
+Text written to correct an error gets the same scrutiny as the error it corrects (this is a
+standing rule of the programme after an earlier correction pass introduced two errors of its own
+while fixing others).
 
 \section{Limitations}
 
