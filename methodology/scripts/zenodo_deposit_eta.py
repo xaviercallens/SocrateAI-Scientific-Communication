@@ -12,12 +12,11 @@ explicit step.
 """
 
 import argparse
-import json
-import os
 import pathlib
 import sys
-import urllib.error
-import urllib.request
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+from zenodo_common import get_token, call, ZenodoAmbiguousFailure, newversion  # noqa: E402
 
 DOCS = pathlib.Path("/home/xavkal/xdev/SocrateAIShared/foundationpaper2/docs")
 LEAN = pathlib.Path("/home/xavkal/xdev/SocrateAI-Lean-Lib")
@@ -115,44 +114,6 @@ METADATA = {
                   "(Dedekind sums via Rademacher Phi). DAG node ETA-01 remains open."),
     }
 }
-
-
-def get_token() -> str:
-    for var in ("ZENODO_TOKEN", "ZENODO_API_TOKEN", "ZENODO_ACCESS_TOKEN"):
-        val = os.environ.get(var)
-        if val:
-            print(f"  token source: ${var}")
-            return val.strip()
-    path = pathlib.Path.home() / ".config" / "zenodo" / "token"
-    if path.is_file():
-        print(f"  token source: {path}")
-        return path.read_text().strip()
-    sys.exit(
-        "No Zenodo token found. Provide it one of these ways:\n"
-        "  export ZENODO_TOKEN=...           (must be set before the agent session starts)\n"
-        "  mkdir -p ~/.config/zenodo && echo '<token>' > ~/.config/zenodo/token && chmod 600 ~/.config/zenodo/token\n"
-        "Create one at https://zenodo.org/account/settings/applications/tokens/new/\n"
-        "with scopes: deposit:write, deposit:actions"
-    )
-
-
-def call(base, token, method, path, payload=None, raw=None, content_type=None):
-    url = path if path.startswith("http") else f"{base}/api{path}"
-    sep = "&" if "?" in url else "?"
-    url = f"{url}{sep}access_token={token}"
-    headers = {"Content-Type": content_type or "application/json"}
-    # NB: `payload` may legitimately be `{}` (creating an empty deposition). Test against None,
-    # not truthiness — an empty body with a JSON content-type makes Zenodo return HTTP 500.
-    data = raw if raw is not None else (json.dumps(payload).encode() if payload is not None else None)
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(req, timeout=180) as r:
-            body = r.read()
-            return json.loads(body) if body else {}
-    except urllib.error.HTTPError as e:
-        detail = e.read().decode()[:800]
-        # never echo the URL: it carries the token
-        sys.exit(f"Zenodo {method} {path} failed: HTTP {e.code}\n{detail}")
 
 
 def main():

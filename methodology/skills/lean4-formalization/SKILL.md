@@ -254,3 +254,16 @@ action**. Follow that idiom for any η-multiplier work: state multipliers as exp
 `csqrt` on the principal branch. Introducing metaplectic/half-integer-weight slash machinery is a
 research project of its own (it is the expected named obstruction for the level-12 paper) and is
 out of scope for any run that has not explicitly gate-zeroed it.
+
+## A check that "passes" for the wrong reason is not a check *(run-6 addition, LL-27)*
+
+`lake env lean FILE` does **not** accept `--packages` — that flag is `lake build`-only. Passing it
+anyway makes `lean` itself error on the unrecognised flag and exit nonzero, which silently made a
+negative-control check "pass" (report the guard as working) regardless of whether the file's own
+content was actually rejected — the same bug shape as the Quarantine-file typecheck confusion
+earlier in this session, now caught twice. `lake env lean` reads the `.lake/build` state a prior
+`lake build ... --packages=...` step already populated; it needs no flag of its own.
+
+**Rule.** When a check is expected to fail (a negative control, a should-error test), read its
+actual stdout/stderr at least once rather than trusting the exit code alone — verify it fails for
+the *right* reason before trusting that "fails correctly" means what it says.

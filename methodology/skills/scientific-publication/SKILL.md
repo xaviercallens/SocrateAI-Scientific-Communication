@@ -193,3 +193,27 @@ publish are separate, separately checkable steps.
 pass as anything generated: formula against the cited source, instances recomputed mechanically. Two
 of v4's errors were introduced *by the revision itself*, in the unformalized narrative no machine
 checks.
+
+## 10. Cost engineering, and the shared Zenodo client *(run-6 additions)*
+
+**Measured, not guessed** (LL-28/29): gate zero aborting a redundant run cost $7; the same
+question, scoped narrower, proceeding to build cost $235 — a ~33x difference. Cache-read, not
+output, is 55-65% of every run's cost, because it scales with how much a session or an agent has
+already accumulated in context. The two levers that actually move this number: gate zero before
+any proving effort (already policy, now priced), and forking or splitting into fresh sessions for
+anything long or exploratory rather than doing it inline in a continuously-growing conversation.
+
+**Use `scripts/zenodo_common.py`, never hand-roll a Zenodo client again.** It holds the one
+implementation of `get_token`, `call` (retries transient GETs automatically; raises
+`ZenodoAmbiguousFailure` for a non-GET call that timed out or 5xx'd, rather than either silently
+retrying — which risks a duplicate deposition — or crashing), `find_orphan_drafts`, and
+`newversion()` (creates or resumes a version, recovering from an ambiguous `newversion` POST by
+finding the orphan draft instead of minting a second one). This exists because the fix for LL-24
+was written once, in one script, and its sibling script — never updated — was the one that hit the
+*second* occurrence of the exact same bug (LL-27/LL-30). When two scripts do the same external-API
+thing, extract the shared module before the second one ships, not after the second incident.
+
+**Disk headroom is a resource-level check, distinct from the process-level `pgrep -x lake`
+(LL-26/31).** `pgrep` catches a build already running; it cannot catch one that starts a minute
+later and runs unattended. Use `scripts/disk_guard.py` (wired into `paper_gate.py`'s pre-build
+step) for a threshold check, and its `--watch` mode for anything long-running and unattended.

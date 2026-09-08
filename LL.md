@@ -583,3 +583,91 @@ control (or any test expected to fail) starts passing *unexpectedly easily*, or 
 reuses a flag pattern across two different subcommands of the same CLI tool, read the actual
 stdout/stderr at least once — don't infer correctness from the exit code alone until you've seen
 it fail for the right reason.
+
+---
+
+# Cost and time engineering — measured, not guessed *(2026-09-08)*
+
+Every number below is recomputed from this session's own transcripts (`usage` fields across the
+main session and all five `Workflow` runs), not estimated.
+
+| Run | Agents | Output-equiv $ | cache-write % | cache-read % | output % |
+|---|---|---|---|---|---|
+| eta-quotient-run (F3.1/F3.2) | 48 | $290 | 24% | 57% | 18% |
+| eta-multiplier-port-run (F4b) | 36 | $235 | 28% | 55% | 17% |
+| dedekind-rademacher-run (**aborted at gate zero**) | 2 | **$7** | 34% | 57% | 10% |
+| two earlier run-2 workflows | 22 | $71 | — | — | — |
+| main session (all turns, this conversation) | — | $625 | — | 65% | 9% |
+| **Total, whole session** | | **≈$1228** | | | |
+
+## LL-28 — Gate zero is not a correctness gate, it is the single largest cost lever
+
+`dedekind-rademacher-run` cost **$7** because it aborted after one agent found the target already
+built elsewhere. Had it proceeded, its sibling (`eta-multiplier-port-run`, the SAME topic scoped
+narrower) cost $235. That is a **~33x** difference for the same underlying question, entirely
+explained by where the check ran. This was already policy (LL-19); this run supplies the first
+real price tag proving the policy pays for itself, and by how much.
+
+**Rule.** Gate zero is scheduled as the FIRST phase of every workflow, before any Blueprint or
+Statements phase, with no exceptions for "this one feels obviously novel." The obvious ones are
+exactly the ones a five-minute check refutes cheapest.
+
+## LL-29 — Cache-read, not output, is where the money goes
+
+Across every workflow this session, **cache-read is 55-57% of cost and output is only 17-18%**.
+The main session (this single long conversation) is worse: 65% cache-read, 9% output — because a
+continuous conversation's context only grows, and every subsequent call re-reads all of it.
+`PUBLICATION_STRATEGY.md` already recommended splitting long work into per-phase sessions for this
+reason; this run's numbers are the first direct confirmation that the recommendation is sized
+correctly, not just plausible.
+
+**Rule.** For any task expected to span many hours or many large file reads, prefer either (a) a
+fresh session per phase (verification pass, correction pass, publish pass — each with its own
+short context), or (b) a `Workflow` run, whose subagents each start cold and do NOT inherit the
+orchestrator's accumulated context. Both were used correctly this session for the Lean/paper work;
+the one place they were not — the multi-hour inline license/quarantine/check_dag/disk-emergency
+verification pass, done directly in the main thread rather than forked out — is exactly the part
+that pushed the main session to $625.
+
+## LL-30 — Duplicated tooling drifts; the second 504 hit the copy that never got the first fix
+
+`zenodo_deposit.py` got the retry/orphan-recovery fix after LL-24's first incident. Its near-
+identical sibling, `zenodo_deposit_eta.py`, did not — and was the one in use the second time a 504
+hit (LL-27's incident). The fix had been written once and simply never copied to the second file,
+because nothing forced it to travel with the shared logic.
+
+**Rule (implemented, not just stated).** `scripts/zenodo_common.py` now holds the one
+implementation of `get_token`, `call` (with retry-with-backoff, GET-only auto-retry, and a
+`ZenodoAmbiguousFailure` for non-GET calls), `find_orphan_drafts`, and a `newversion()` helper that
+recovers from an ambiguous `newversion` POST by finding the orphan draft instead of creating a
+second one. Both deposit scripts import from it; there is no longer a second copy to drift.
+Whenever two scripts do genuinely the same external-API thing, that is the signal to extract a
+shared module *before* the second one is written, not after the second incident.
+
+## LL-31 — A process check has a blind spot the moment after it runs
+
+LL-26 already recorded the disk incident. The generalizable point: `pgrep -x lake` catches a build
+already running at check time, but nothing catches one that starts a minute later — which is
+exactly what happened, from an orphaned agent of an already-completed workflow. **Implemented**:
+`scripts/disk_guard.py`, wired into `paper_gate.py` as a pre-build check (headroom threshold, not
+just process presence), with a `--watch` mode for long unattended runs. A point-in-time process
+check and a headroom check catch different failure shapes, the same way LL-16's "extraction and
+rendering catch disjoint defect classes" does for PDFs — run both, and prefer the resource-level
+check (disk space) over the process-level one (is lake running) where the resource is what
+actually gets exhausted.
+
+## The heuristics that already existed and are reconfirmed, not new
+
+- Serial `lake build` per Prove-phase node is the right trade for Lean work (LL-12 forecloses
+  worktree isolation given local disk); the cost above is the price of that safety, not a defect.
+  A cheaper alternative — batch several leaf nodes' statements, one consolidated build per batch
+  instead of per node — was considered and NOT adopted this session: it trades early failure
+  detection (a broken node caught at node N, not at the end of a batch of five) for build-count
+  savings, and given `lake build` on a warm `.lake/build` tree is incremental, not a full rebuild,
+  the actual savings are smaller than the batch size suggests. Worth a real A/B on a future run
+  rather than asserting it as free money.
+- Haiku/low effort for Guard phases (mechanical counting) vs. opus/xhigh for Verdict (judgment) is
+  already the pattern in every workflow this session; no change indicated by the cost data.
+- `Workflow`'s `resumeFromRunId` cache was not exercised this session (no workflow needed a
+  post-edit re-run) but remains the correct move whenever one does — cached agent() calls with an
+  unchanged `(prompt, opts)` replay instantly rather than re-spending their tokens.

@@ -4,7 +4,8 @@
 it is enforced** — a lesson whose countermeasure is prose is a lesson waiting to repeat. Three
 enforcement classes: **[G]** a gate in `scripts/paper_gate.py` (mechanical, blocks publication),
 **[S]** a rule in a skill (loaded every run), **[W]** structure in a workflow (shapes how agents
-are dispatched).
+are dispatched), **[T]** a shared tool/script (mechanical, called directly rather than re-derived
+by an agent each time).
 
 | LL | Failure | Tactic | Enforced |
 |----|---------|--------|----------|
@@ -26,7 +27,12 @@ are dispatched).
 | 22b | Whole-library claims checked on a subset | Library-wide axiom scan vs explicit allowlist | [G] axiom gate (caught postulate 6 on first run) |
 | 25 | Prior art found for the *missing* list, not the proved list | Gate zero searches the "what would remove it" list too, by name **and** statement shape | [W] GateZero prompt; [S] formalization-dag §7 |
 | 23 | Five versions in one day, checks ran after publishing | **One green gate before any publish**; new failure ⇒ new gate in the script | [G] `paper_gate.py` exit code |
-| 24 | 504 on an irreversible POST | Read server state before any retry | [S] publication skill §3 |
+| 24 | 504 on an irreversible POST | Read server state before any retry | [S] publication skill; [T] `zenodo_common.newversion()` auto-recovers via `find_orphan_drafts` |
+| 26 | Disk hit 100% from an undetected orphan process | Resource-level check, not just process-level | [T] `scripts/disk_guard.py`, wired into `paper_gate.py` |
+| 27 | `lake env lean --packages` silently made a check always "pass" | Verify a check fails for the RIGHT reason at least once | [S] both Lean skills — read stdout, not just the exit code |
+| 28 | — (gate zero: $7 aborted vs $235 for the same question proceeded) | Gate zero is scheduled first, unconditionally | [W] every workflow's Phase 1 |
+| 29 | Cache-read is 55-65% of cost, not output | Fork or split-session for anything long/exploratory | [S] publication skill; PUBLICATION_STRATEGY.md |
+| 30 | A fix wasn't copied to a sibling script; the second incident hit it | Extract shared modules BEFORE a second near-duplicate ships | [T] `scripts/zenodo_common.py` |
 
 ## The invariant
 
