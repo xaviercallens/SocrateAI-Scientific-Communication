@@ -12,6 +12,14 @@ import argparse, glob, json, pathlib, re, subprocess, sys, unicodedata
 LEAN = pathlib.Path("/home/xavkal/xdev/SocrateAI-Lean-Lib")
 MATHLIB = pathlib.Path("/home/xavkal/xdev/SocrateAI-Scientific-Measure/lean/.lake/packages/mathlib/Mathlib")
 ETA_MODULES = sorted(glob.glob(str(LEAN / "Lean/SocrateAI/ModularForms/EtaQuotient*.lean")))
+FRICKE_MODULES = sorted(glob.glob(str(LEAN / "Lean/SocrateAI/ModularForms/Fricke*.lean")))
+# Which artifact modules a paper's "N declarations in M lines" claim is about, keyed by tex stem
+# prefix (LL-30-style drift already bit us once: this used to be ETA_MODULES unconditionally).
+MODULES_BY_STEM = {
+    "Lean4_EtaQuotients_DRAFT": ETA_MODULES,
+    "Lean4_Fricke_Involution": FRICKE_MODULES,
+    "Lean4_Involution_Fricke_FR": FRICKE_MODULES,
+}
 # Whole-library axioms that are KNOWN, disclosed in the paper, and provably unused (LL-22 rule 3).
 AXIOM_ALLOWLIST = {f"physics_postulate_{i}" for i in range(1, 7)}
 
@@ -186,9 +194,10 @@ def main():
     gate("every cited Lean name resolves (LL-5, grep -ri per LL-20)", not unresolved, str(unresolved[:4]))
 
     # numeric claims recomputed at gate time (LL-22 rule 2)
-    mod_lines = sum(len(open(f, encoding="utf-8").read().split("\n")) - 1 for f in ETA_MODULES)
+    modules = MODULES_BY_STEM.get(tex_path.stem, ETA_MODULES)
+    mod_lines = sum(len(open(f, encoding="utf-8").read().split("\n")) - 1 for f in modules)
     decl_re = re.compile(r"^\s*(@\[[^\]]*\]\s*)?(private |protected |noncomputable )*(theorem|lemma|def|abbrev|instance) ", re.M)
-    mod_decls = sum(len(decl_re.findall(open(f, encoding="utf-8").read())) for f in ETA_MODULES)
+    mod_decls = sum(len(decl_re.findall(open(f, encoding="utf-8").read())) for f in modules)
     dagj = [json.loads(l) for l in open(LEAN / "dag/theorems.jsonl") if l.strip() and not l.startswith("#")]
     computed = {
         "declarations": mod_decls, "module lines": mod_lines,
@@ -197,9 +206,14 @@ def main():
         "DAG proved": sum(1 for d in dagj if d["status"] == "proved"),
     }
     if jobs: computed["build jobs"] = jobs
+    # Each computed key may be asserted in EN or FR phrasing; a paper need not make every claim
+    # type (e.g. Fricke has no DAG-node or distinct-theorems claim) — absence is a skip, not a
+    # fail, but a claim that IS present must match the recomputed artifact number exactly.
     claims = {  # regex in the paper -> computed key
         r"(\d+) declarations in (\d+) lines": ("declarations", "module lines"),
+        r"(\d+) d[ée]clarations en (\d+) lignes": ("declarations", "module lines"),
         r"completes in (\d+) jobs": ("build jobs",),
+        r"s'ach[èe]ve en (\d+) t[âa]ches": ("build jobs",),
         r"(\d+) \\texttt\{\\#guard\\_msgs": ("guards",),
         r"(\d+) distinct theorems": ("distinct guarded",),
         r"(\d+) report exactly": ("std-axiom guards",),
@@ -208,7 +222,7 @@ def main():
     for pat, keys in claims.items():
         m = re.search(pat, tex)
         if not m:
-            gate(f"paper states «{pat}»", False, "claim not found in tex"); continue
+            continue  # this paper makes no such claim — nothing to check
         vals = [int(g) for g in m.groups()]
         want = [computed[k] for k in keys if k in computed]
         if len(want) < len(keys): continue  # e.g. --no-build: jobs unknown, skip silently
@@ -220,7 +234,8 @@ def main():
 
     # status honesty: an unreviewed deposit must say so on page 1 (run-2/3 practice)
     p1 = sh(f"pdftotext -f 1 -l 1 {pdf_path} -").stdout
-    gate("page 1 declares review status", "not been peer reviewed" in p1 or "peer review" in p1)
+    gate("page 1 declares review status", "not been peer reviewed" in p1 or "peer review" in p1
+         or "relecture par les pairs" in p1)
 
     print(f"\n{'ALL GATES GREEN — publishable.' if not FAIL else 'FAILED: ' + ', '.join(FAIL)}")
     sys.exit(1 if FAIL else 0)

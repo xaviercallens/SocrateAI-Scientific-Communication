@@ -33,6 +33,7 @@ by an agent each time).
 | 28 | — (gate zero: $7 aborted vs $235 for the same question proceeded) | Gate zero is scheduled first, unconditionally | [W] every workflow's Phase 1 |
 | 29 | Cache-read is 55-65% of cost, not output | Fork or split-session for anything long/exploratory | [S] publication skill; PUBLICATION_STRATEGY.md |
 | 30 | A fix wasn't copied to a sibling script; the second incident hit it | Extract shared modules BEFORE a second near-duplicate ships | [T] `scripts/zenodo_common.py` |
+| 35 | `paper_gate.py`'s numeric-claims check was hardcoded to one paper (modules + English-only phrasing) | Per-paper module lookup; absent claim = skip not fail; check target-language phrasing too | [T] `scripts/paper_gate.py` (`MODULES_BY_STEM`, FR claim regexes, `relecture par les pairs`) |
 
 ## The invariant
 

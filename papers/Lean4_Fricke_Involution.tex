@@ -13,6 +13,8 @@
 \usepackage{caption}
 \captionsetup[figure]{name=Listing}
 \newcommand{\lean}[1]{\ifmmode\text{\ttfamily\detokenize{#1}}\else{\ttfamily\detokenize{#1}}\fi}
+\newcommand{\brk}{\discretionary{}{}{}}
+\emergencystretch=5em
 
 \definecolor{indigo}{rgb}{0.29, 0.0, 0.51}
 \definecolor{teal}{rgb}{0.0, 0.5, 0.5}
@@ -62,7 +64,8 @@
 \theoremstyle{remark}
 \newtheorem{remark}[theorem]{Remark}
 
-\title{\textbf{A Mathlib-Idiomatic Formalization of the Fricke \\ Involution and its Operator on Modular Forms}}
+\title{\textbf{A Mathlib-Idiomatic Formalization of the Fricke \\ Involution and its Operator on Modular Forms}\\[0.8em]
+  \large\textcolor{BrickRed}{PREPRINT --- not peer reviewed}}
 \author{
   Xavier Callens\thanks{Corresponding author: \texttt{callensxavier@gmail.com}} \\
   \small SocrateAI Research Initiative
@@ -72,6 +75,19 @@
 
 \begin{document}
 \maketitle
+
+\begin{center}
+\fbox{\begin{minipage}{0.92\textwidth}
+\small \textbf{Status.} This is a \emph{preprint}. It has \textbf{not been peer reviewed}. The
+Lean development it describes compiles and is axiom-audited --- those claims are machine-checked
+and independently reproducible --- but the \emph{exposition} has had no external referee. This
+version incorporates revisions from two internal adversarial passes: one against an earlier claim
+of mathematical priority (found false and retracted, \S\ref{sec:related}) and one against an
+attempted T-duality bridge theorem (found unproved and reported as a negative result,
+\S\ref{sec:tduality}); neither constitutes venue peer review. Read the scope before citing the
+result.
+\end{minipage}}
+\end{center}
 
 \begin{abstract}
 We formalize, in Lean 4 on top of Mathlib, the Fricke involution
@@ -383,8 +399,8 @@ Archived at Zenodo, \href{https://doi.org/10.5281/zenodo.22542571}{\texttt{doi:1
 which is the citable version of record for this note and its sources.
 Repository \url{https://github.com/xaviercallens/SocrateAI-Lean-Lib} (tag
 \texttt{fricke-v1}); module
-\texttt{Lean/SocrateAI/ModularForms/\{FrickeInvolution, FrickeSlash, FrickeModular, FrickeComposite\}.lean},
-with the axiom guards in \texttt{Lean/SocrateAI/FinalCheck.lean};
+\texttt{Lean/\brk SocrateAI/\brk ModularForms/\brk \{FrickeInvolution,\brk\ FrickeSlash,\brk\ FrickeModular,\brk\ FrickeComposite\}.lean},
+with the axiom guards in \texttt{Lean/\brk SocrateAI/\brk FinalCheck.lean};
 a mirror with a dataset card is at
 \url{https://huggingface.co/datasets/callensxavier/socrateai-fricke-involution}.
 Toolchain \texttt{leanprover/lean4:v4.32.2};
@@ -398,10 +414,10 @@ configuration was not distributed. That was true, and understated: the published
 \texttt{lakefile.lean} declared no Mathlib dependency at all and its \texttt{lean-toolchain} named a
 different compiler version, so a clean clone could not build. Both are fixed.
 The four modules total 27 declarations in 291 lines and import only
-\lean{Mathlib.NumberTheory.ModularForms.SlashActions},
-\lean{Mathlib.NumberTheory.ModularForms.CongruenceSubgroups},
-\lean{Mathlib.NumberTheory.ModularForms.SlashInvariantForms} and
-\lean{Mathlib.NumberTheory.ModularForms.Basic}.
+\texttt{Mathlib.\allowbreak NumberTheory.\allowbreak ModularForms.\allowbreak SlashActions},
+\texttt{Mathlib.\allowbreak NumberTheory.\allowbreak ModularForms.\allowbreak CongruenceSubgroups},
+\texttt{Mathlib.\allowbreak NumberTheory.\allowbreak ModularForms.\allowbreak SlashInvariantForms} and
+\texttt{Mathlib.\allowbreak NumberTheory.\allowbreak ModularForms.\allowbreak Basic}.
 A statement-dependency graph with a natural-language description per node, and a validator
 enforcing that every node marked proved names an existing declaration and depends only on
 proved nodes, is in \texttt{dag/}.
@@ -413,8 +429,8 @@ The Fermat's Last Theorem artifact~\cite{FLT2026} is a Lean~4 development built 
 already contains substantial Fricke and Atkin--Lehner theory. A repository-scoped code search
 returns on the order of $2.7\times10^3$ Lean files mentioning \texttt{Fricke} and
 $3.6\times10^3$ mentioning \texttt{AtkinLehner}, including
-\texttt{Thm\_ModularForm\_heckeU\_add\_slash\_fricke\_eq\_zero},
-\texttt{Thm\_CuspForm\_hasNebentypus\_inv\_and\_qCoeff\_hecke\_eigen\_of\_fricke} and
+\texttt{Thm\_ModularForm\_heckeU\_add\brk\_slash\brk\_fricke\brk\_eq\brk\_zero},
+\texttt{Thm\_CuspForm\_hasNebentypus\brk\_inv\brk\_and\brk\_qCoeff\brk\_hecke\brk\_eigen\brk\_of\brk\_fricke} and
 \texttt{Def\_ModularCurve\_AtkinLehner}. Their statements use the same matrix
 $\left(\begin{smallmatrix} 0 & -1 \\ N & 0\end{smallmatrix}\right)$ and the same Mathlib slash
 action that we use here, and they go considerably further --- to Hecke operators, eigenforms with
@@ -482,14 +498,83 @@ $f(\tau) = \prod_{\delta \mid N} \eta(\delta \tau)^{r_\delta}$ are modular on $\
 under Ligozat's conditions, and their behaviour under Fricke and Atkin--Lehner operators is
 what makes multiplicativity tractable~\cite{Martin1996}. A formalization of eta-quotient
 identities therefore needs $W_N$ as a prerequisite, which is what this module supplies.
-The same operator is the modular-side input to the moonshine correspondences studied
-elsewhere in this programme. With the operator now defined on \lean{ModularForm}, the immediate next steps are the
+A first attempt to make that link precise is reported in \S\ref{sec:tduality} below, and it
+failed instructively rather than succeeding. With the operator now defined on \lean{ModularForm}, the immediate next steps are the
 normalization constant of limitation (b) and the full Atkin--Lehner family of limitation (a). On the
 analytic side, the Rademacher-type coefficient bounds that accompany the eta-quotient
 programme will first be checked at the program-verified tier with lightweight
 inequality-proof tooling in the style of Tao's \emph{estimates} assistant~\cite{TaoEstimates2025},
 and only then promoted to kernel-checked statements --- the same two-tier discipline
 (exact checker below, kernel above) used throughout this programme.
+
+\section{A negative result: an attempted T-duality bridge}\label{sec:tduality}
+
+A follow-up effort, reported here for the record rather than left as an unqualified forward
+pointer, attempted to formalize that $W_N$ is not merely a device for eta-quotients but the
+Lean~4 incarnation of a physical duality: that T-duality's action on the complex-structure
+modulus $\tau$ of a $T^2$ factor, restricted to $\Gamma_0(N)$, \emph{coincides} with $W_N$'s
+already-proven action on $\mathbb{H}$. This section states plainly what was found, because a
+withheld negative result is exactly the failure mode this programme has already corrected twice
+before~\cite{FLT2026} --- and because what survives the attempt is genuine and reusable.
+
+\subsection*{What is proved, sorry-free, and reusable}
+
+\begin{theorem}[$W_N$'s Möbius action, in closed form]\label{thm:tdualm1}
+\lean{frickeW_smul_coe}: for every $N>0$ and $\tau\in\mathbb{H}$,
+\[
+  \bigl(W_N \cdot \tau : \mathbb{C}\bigr) \;=\; \frac{-1}{N\tau}.
+\]
+\end{theorem}
+
+This closes a real seam that nothing in the library previously closed: the $-1/(N\tau)$ normal
+form is exactly what the $\mathbb{C}$-valued eta-quotient half of this programme already computes
+with (\lean{eta_fricke_factor}, in the eta-quotient modules), while $W_N$ itself had only ever
+been stated in $GL_2(\mathbb{R})$-action language. The proof goes through Mathlib's determinant
+case split (Theorem~\ref{thm:glpos} supplies exactly the positive-determinant hypothesis Mathlib's
+own action lemma needs, so no hidden sign or conjugation enters) and is certified non-vacuous by a
+negative control: the identical proof script against four independently-computed \emph{wrong}
+right-hand sides ($+1/(N\tau)$, $-1/\tau$, $-N/\tau$, $-1/(N+\tau)$) fails with four distinct
+\lean{unsolved goals}, each displaying the same correct left-hand side.
+
+\subsection*{What is not proved, and why}
+
+The bridge statement itself,
+\[
+  \bigl(W_N \cdot \tau : \mathbb{C}\bigr) = \tfrac{-1}{N\tau}
+  \ \wedge\ \forall\,\gamma\in\Gamma_0(N),\ \gamma\cdot\tau
+    \;\text{is the standard fractional-linear action of}\ SL_2(\mathbb{Z}),
+\]
+remains \lean{sorry}, under a build-failing inverted axiom guard, and an adversarial review of
+this programme's own workflow found two independent reasons it should stay that way.
+
+\textbf{It is a relabelling, not a reduction.} A standalone equivalence check, compiled and
+verified, shows the bridge statement is logically equivalent to the conjunction of three already-
+proved lemmas and adds no content beyond them: the hypothesis $\gamma\in\Gamma_0(N)$ is never
+consumed (the second conjunct holds for every $\gamma\in SL_2(\mathbb{Z})$), and neither
+Theorem~\ref{thm:normalizes} (that $W_N$ normalizes $\Gamma_0(N)$) nor the involution property
+$W_N^2=-N\cdot I$ occurs anywhere in the statement or its proof term. Nothing in the Lean term
+names a duality group, a string background, or a spectrum; the physics is asserted only in prose
+around the theorem, not inside it.
+
+\textbf{The physics citation does not support it.} The natural reference for a $\tau$-modulus
+T-duality action, Giveon--Porrati--Rabinovici~\cite{GPR1994}, anchors $\tau\mapsto-1/\tau$ only at
+$N=1$. For $N>1$, $\det W_N = N$, so $W_N$ is not even an element of the $SL_2(\mathbb{Z})$ that
+reference describes, and an exhaustive search of its text returns no occurrence of a Fricke
+involution, a congruence subgroup, or a level-dependent duality element at any $N>1$. The correct
+physical home for a level-$N$ Fricke-type map turns out to be a different object entirely:
+Persson--Volpato~\cite{PerssonVolpato2015} identify $S\mapsto -1/(NS)$ as an \emph{S-duality} on
+the heterotic axio-dilaton modulus in CHL orbifold models, explicitly \emph{outside} the standard
+$SL_2(\mathbb{Z})$ symmetry of the parent theory --- a different modulus, and a different duality,
+than the one this attempt targeted.
+
+\subsection*{The honest conclusion}
+
+Theorem~\ref{thm:tdualm1} is real: it is evidence that $W_N$ is the right mathematical object for
+a physical correspondence, stated purely as a fact about $\mathbb{H}$ and $\mathbb{C}$ with no
+physics content claimed. Which correspondence, and under what hypotheses, remains open, and the
+Persson--Volpato reference is where the next attempt should start --- inside CHL orbifolds of
+$K3\times T^2$, on the axio-dilaton, not the $T^2$ modulus. We record this as a finding rather than
+quietly dropping the sentence that used to promise it.
 
 \section{Conclusion}
 
@@ -501,6 +586,37 @@ built on Mathlib's existing \lean{SlashAction}, \lean{SlashInvariantForm} and
 \lean{ModularForm} infrastructure rather than duplicating it, so that it composes with the
 rest of the library. The mathematics is classical; the machine-checked statement of it is not.
 
+\section*{A note on method: AI assistance and human responsibility}
+
+This note follows the disclosure norm argued for by Tao~\cite{Tao2026AI}, endorsing recommendations
+of the Leiden Declaration on Artificial Intelligence and Mathematics~\cite{Leiden2026}: disclose
+tool use, affirm that credit and responsibility belong to the human author, and attribute sources
+where AI tools cannot reliably do so themselves.
+
+\textbf{What AI did.} The Lean~4 formalization, the literature search, and the drafting of this
+text were produced with the assistance of large language models (Anthropic's Claude family),
+working under human direction across many sessions. The methodology is neuro-symbolic in the
+specific sense Tao describes~\cite{Tao2026AI}: natural-language reasoning proposes definitions,
+proof strategies, and prose, and the Lean kernel --- not the model, and not the author's trust in
+the model --- is what admits or rejects every mathematical claim. Every theorem in this paper
+compiles against Mathlib with no \lean{sorry} and a build-failing axiom guard on its footprint
+(\S\ref{sec:verification}); nothing here is asserted true because a model said so.
+
+\textbf{What the author did.} Xavier Callens set the research direction, chose what to formalize
+and in what order, judged what the results mean and whether they are worth publishing, and is
+responsible for every claim in this document, including its errors. That responsibility was
+exercised concretely, not nominally, in this paper's own history: an earlier draft claimed priority
+for this formalization, and that claim was found false, retracted, and replaced with the
+attribution recorded in \S\ref{sec:related}; a follow-up attempt to extend $W_N$ to a physical
+duality (\S\ref{sec:tduality}) was found, on adversarial review, to reduce to a relabelling with an
+unsupported physics citation, and is reported here as a negative result rather than closed as a
+theorem. Tao's own test is apt: a result that cannot be explained and defended by its author,
+formally verified or not, is not ready to be called complete~\cite{Tao2026AI}. The mathematical
+content of $W_N$ --- what it is, why it normalizes $\Gamma_0(N)$, and why the two withdrawn claims
+above were in fact wrong --- is something the author can explain without further AI assistance;
+the Lean proof terms that certify it were substantially AI-drafted and are trusted only because the
+kernel, not the author, checks them.
+
 \begin{thebibliography}{99}
 \bibitem{AtkinLehner1970} A.~O.~L.~Atkin, J.~Lehner, \textit{Hecke operators on $\Gamma_0(m)$}, Math.\ Ann.\ \textbf{185} (1970), 134--160. \texttt{doi:10.1007/BF01359701}.
 \bibitem{Mathlib2020} The mathlib Community, \textit{The Lean mathematical library}, Proceedings of the 9th ACM SIGPLAN International Conference on Certified Programs and Proofs (CPP), 2020.
@@ -509,9 +625,16 @@ rest of the library. The mathematics is classical; the machine-checked statement
 \bibitem{Miyake2006} T.~Miyake, \textit{Modular Forms}, Springer Monographs in Mathematics (2006).
 \bibitem{Ono2004} K.~Ono, \textit{The Web of Modularity: Arithmetic of the Coefficients of Modular Forms and $q$-series}, CBMS Regional Conference Series in Mathematics \textbf{102}, AMS (2004). \texttt{doi:10.1090/cbms/102}.
 \bibitem{Martin1996} Y.~Martin, \textit{Multiplicative eta-quotients}, Trans.\ Amer.\ Math.\ Soc.\ \textbf{348} (1996), 4825--4856.
+\bibitem{GPR1994} A.~Giveon, M.~Porrati, E.~Rabinovici, \textit{Target Space Duality in String Theory}, Phys.\ Rept.\ \textbf{244} (1994), 77--202. \texttt{arXiv:hep-th/9401139}.
+\bibitem{PerssonVolpato2015} D.~Persson, R.~Volpato, \textit{Fricke S-duality in CHL models}, JHEP \textbf{12} (2015) 156. \texttt{arXiv:1504.07260}.
 \bibitem{FLT2026} Anthropic, \textit{A formal proof of Fermat's Last Theorem in Lean 4}, software artifact, \url{https://github.com/anthropics/fermats-last-theorem}, 2026.
 \bibitem{Prove2Me2026} S.~Chen, K.~Marwaha, X.~Lu, H.~Yuen, T.~Peng, \textit{Prove2Me: An open collaborative platform for scaling math formalization}, arXiv:2608.28433, 2026.
-\bibitem{Tao2026AI} T.~Tao, \textit{Mathematics in the age of AI}, lecture at the International Congress of Mathematicians 2026; arXiv:2608.16753.
+\bibitem{Tao2026AI} T.~Tao, \textit{Mathematics in the age of AI}, essay based on a lecture at the
+International Congress of Mathematicians, July 2026, submitted to the Proceedings of the ICM 2026.
+\texttt{arXiv:2608.16753}.
+\bibitem{Leiden2026} \textit{The Leiden Declaration on Artificial Intelligence and Mathematics},
+June 2, 2026, endorsed by the International Mathematical Union. \url{https://leidendeclaration.ai/},
+\texttt{doi:10.5281/zenodo.20302944}.
 \bibitem{TaoEstimates2025} T.~Tao, \textit{estimates: a lightweight proof assistant for inequalities and asymptotic estimates}, software, \url{https://github.com/teorth/estimates}, 2025.
 \bibitem{deMoura2021} L.~de~Moura et al., \textit{The Lean 4 Theorem Prover and Programming Language}, CADE-28, LNCS \textbf{12699}, Springer (2021).
 \end{thebibliography}

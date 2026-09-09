@@ -31,6 +31,10 @@ FILES = [
     LEAN / "Lean/SocrateAI/ModularForms/EtaQuotientPrimeLevel.lean",
     LEAN / "Lean/SocrateAI/FinalCheck.lean",
     LEAN / "dag/theorems.jsonl",
+    pathlib.Path("/home/xavkal/xdev/SocrateAIShared/foundationpaper2/REVIEW_RESPONSE.md"),
+    pathlib.Path("/home/xavkal/xdev/SocrateAIShared/foundationpaper2/TACTICS.md"),
+    pathlib.Path("/home/xavkal/xdev/SocrateAIShared/foundationpaper2/LL.md"),
+    pathlib.Path("/home/xavkal/xdev/SocrateAIShared/foundationpaper2/scripts/paper_gate.py"),
 ]
 
 DESCRIPTION = """
@@ -67,11 +71,17 @@ E<sub>2</sub> on the E2_slash_action machinery Mathlib already has.</p>
 <p>The DAG node ETA-01 (the general criterion) remains <code>open</code> with
 <code>lean_name: null</code>. This artifact does not claim it.</p>
 
-<p><strong>Verification:</strong> <code>lake build SocrateAI</code> &rarr; 3462 jobs, 0 errors,
-0 <code>sorry</code>. 519 declarations in 8117 lines. 391 build-failing
-<code>#guard_msgs in #print axioms</code> guards over 389 distinct theorems; 370 report exactly
-[propext, Classical.choice, Quot.sound]. A negative control asserting a deliberately wrong
+<p><strong>Verification:</strong> <code>lake build SocrateAI</code> &rarr; 3768 jobs, 0 errors,
+0 <code>sorry</code>. 519 declarations in 8117 lines. 822 build-failing
+<code>#guard_msgs in #print axioms</code> guards (library-wide, now shared with a follow-up
+T-duality module &mdash; see 10.5281/zenodo.22542571 v4) over 820 distinct theorems; 793 report
+exactly [propext, Classical.choice, Quot.sound]. A negative control asserting a deliberately wrong
 footprint is verified to fail. Of 453 theorems, 14 (3%) have a one-line rfl/decide proof.</p>
+
+<p><strong>v9 update:</strong> adds a note on method, grounded in Tao's <em>Mathematics in the age
+of AI</em> (arXiv:2608.16753) and the Leiden Declaration on Artificial Intelligence and
+Mathematics, disclosing the neuro-symbolic, AI-assisted methodology and stating the author's
+responsibility for every claim in the paper.</p>
 
 <p><strong>Correction to our own specification:</strong> the cusp-order node was scoped with the
 &Theta;-exponent written as Ligozat's ord(N,r,d). That statement is false &mdash; Ligozat's order
@@ -123,8 +133,29 @@ def main():
                          "Requires --deposition: publishing must target the draft that was reviewed.")
     ap.add_argument("--deposition", type=int, metavar="ID",
                     help="act on this existing draft instead of creating a new one")
+    ap.add_argument("--newversion", type=int, metavar="PUBLISHED_ID",
+                    help="publish a new version of an already-published record (identified by its "
+                         "own record id, not the concept id) under the same concept DOI. Uploads "
+                         "FILES, bumps the version label, and publishes in one step — IRREVERSIBLE.")
+    ap.add_argument("--version-label", default=None, help="version label for --newversion, e.g. v9")
     ap.add_argument("--sandbox", action="store_true", help="use sandbox.zenodo.org")
     args = ap.parse_args()
+
+    if args.newversion:
+        if not args.version_label:
+            sys.exit("--newversion requires --version-label (e.g. --version-label v9)")
+        base = "https://sandbox.zenodo.org" if args.sandbox else "https://zenodo.org"
+        token = get_token()
+        missing = [f for f in FILES if not f.is_file()]
+        if missing:
+            sys.exit("Missing files:\n" + "\n".join(f"  {f}" for f in missing))
+        newversion(
+            base, token, args.newversion, FILES, args.version_label,
+            note=f"{args.version_label}: adds the AI-disclosure note on method "
+                 "(Tao arXiv:2608.16753; Leiden Declaration).",
+            desc_override=DESCRIPTION.strip(),
+        )
+        return
 
     # Guard against the failure this script actually caused on 2026-09-06: `--publish` with no
     # target created a SECOND deposition, uploaded to it, and minted a DOI for that one — leaving

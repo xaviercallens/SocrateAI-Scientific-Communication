@@ -31,6 +31,7 @@ FILES = [
     LEAN / "Lean/SocrateAI/ModularForms/FrickeSlash.lean",
     LEAN / "Lean/SocrateAI/ModularForms/FrickeModular.lean",
     LEAN / "Lean/SocrateAI/ModularForms/FrickeComposite.lean",
+    LEAN / "Lean/SocrateAI/StringTheory/TDualityBridge.lean",
     LEAN / "Lean/SocrateAI/FinalCheck.lean",
     LEAN / "dag/theorems.jsonl",
     LEAN / "dag/PROOF-PATH.md",
@@ -41,11 +42,26 @@ DESCRIPTION = """
 <em>W<sub>N</sub></em> = [[0, -1], [N, 0]] on the congruence subgroup
 &Gamma;<sub>0</sub>(N), and of the operator it induces on modular forms.</p>
 
-<p><strong>Verified:</strong> <code>lake build SocrateAI</code> &rarr; 3053 jobs, 0 errors,
+<p><strong>Verified:</strong> <code>lake build SocrateAI</code> &rarr; 3768 jobs, 0 errors,
 0 <code>sorry</code>, against Lean 4.32.2 and Mathlib <code>905b9581</code>. Sixteen headline
 theorems are pinned by build-failing <code>#guard_msgs in #print axioms</code> guards, each with
 footprint exactly <code>[propext, Classical.choice, Quot.sound]</code>; a deliberately-wrong
 negative control was verified to fail, establishing that the guards are load-bearing.</p>
+
+<p><strong>v4 update:</strong> adds a negative-result section reporting an attempted bridge from
+W<sub>N</sub> to a physical T-duality on the T&sup2; complex-structure modulus. One new lemma,
+<code>frickeW_smul_coe</code> (W<sub>N</sub>&middot;&tau; = &minus;1/(N&tau;) in closed form), is
+proved, sorry-free, and certified non-vacuous by a negative control against four
+independently-computed wrong right-hand sides. The bridge theorem itself was found, on adversarial
+review, to be a relabelling of three already-proved lemmas with no added content, and to cite a
+physics reference (Giveon&ndash;Porrati&ndash;Rabinovici) that only supports level N=1; it remains
+<code>sorry</code> under an inverted axiom-guard tripwire and is reported as an open, actively
+contested question rather than closed as a theorem. The correct physical home for a level-N
+Fricke-type map is argued to be Persson&ndash;Volpato's S-duality on the heterotic axio-dilaton in
+CHL orbifold models &mdash; a different modulus and duality than the one this attempt targeted. A
+note on method, grounded in Tao's <em>Mathematics in the age of AI</em> (arXiv:2608.16753) and the
+Leiden Declaration on Artificial Intelligence and Mathematics, discloses the neuro-symbolic,
+AI-assisted methodology and states the author's responsibility for every claim in the paper.</p>
 
 <p><strong>Results formalized:</strong> W<sub>N</sub> &isin; GL(2,&#8477;)<sup>+</sup>;
 W<sub>N</sub><sup>2</sup> = &minus;N&middot;I; the conjugation W&gamma;W<sup>&minus;1</sup> &isin;
@@ -62,10 +78,12 @@ is an independent, Mathlib-idiomatic treatment with an explicit axiom-audit disc
 review verdict was REJECT as a standalone venue submission; the recommended path for the material is
 a Mathlib pull request. This deposit is an archival record, not a submission.</p>
 
-<p><strong>Reproduction caveat:</strong> the build configuration (<code>lakefile.lean</code>,
-<code>lake-manifest.json</code>, <code>lean-toolchain</code>) is excluded because it hard-codes
-absolute paths to a local Mathlib package pool. The artifact is not yet build-reproducible by a
-third party; a portable lakefile pinning Mathlib by git revision is outstanding work.</p>
+<p><strong>Reproduction caveat (fixed in v4):</strong> the build configuration is now fully
+portable: <code>lakefile.lean</code> requires Mathlib from git at the pinned revision above, and
+<code>lean-toolchain</code> matches it. <code>git clone</code>, <code>lake exe cache get</code>,
+<code>lake build SocrateAI</code> reproduces the artifact; see <code>BUILDING.md</code>. Earlier
+versions of this deposit's paper stated that the configuration was not distributed; that was true,
+and is now fixed.</p>
 
 <p><strong>Langues / Languages:</strong> the deposit contains the note in English
 (<code>Lean4_Fricke_Involution.pdf</code>) and in French
@@ -114,8 +132,29 @@ def main():
                          "Requires --deposition: publishing must target the draft that was reviewed.")
     ap.add_argument("--deposition", type=int, metavar="ID",
                     help="act on this existing draft instead of creating a new one")
+    ap.add_argument("--newversion", type=int, metavar="PUBLISHED_ID",
+                    help="publish a new version of an already-published record (identified by its "
+                         "own record id, not the concept id) under the same concept DOI. Uploads "
+                         "FILES, bumps the version label, and publishes in one step — IRREVERSIBLE.")
+    ap.add_argument("--version-label", default=None, help="version label for --newversion, e.g. v4")
     ap.add_argument("--sandbox", action="store_true", help="use sandbox.zenodo.org")
     args = ap.parse_args()
+
+    if args.newversion:
+        if not args.version_label:
+            sys.exit("--newversion requires --version-label (e.g. --version-label v4)")
+        base = "https://sandbox.zenodo.org" if args.sandbox else "https://zenodo.org"
+        token = get_token()
+        missing = [f for f in FILES if not f.is_file()]
+        if missing:
+            sys.exit("Missing files:\n" + "\n".join(f"  {f}" for f in missing))
+        newversion(
+            base, token, args.newversion, FILES, args.version_label,
+            note=f"{args.version_label}: adds the T-duality negative-result section and the "
+                 "AI-disclosure note on method (Tao arXiv:2608.16753; Leiden Declaration).",
+            desc_override=DESCRIPTION.strip(),
+        )
+        return
 
     # Guard against the failure this script actually caused on 2026-09-06: `--publish` with no
     # target created a SECOND deposition, uploaded to it, and minted a DOI for that one — leaving

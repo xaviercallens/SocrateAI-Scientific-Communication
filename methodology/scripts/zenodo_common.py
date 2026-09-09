@@ -104,11 +104,17 @@ def find_orphan_drafts(base, token, title_substring):
             if not d.get("submitted") and title_substring.lower() in d["metadata"].get("title", "").lower()]
 
 
-def newversion(base, token, published_id, files, version_label, note, desc_fix=None):
+def newversion(base, token, published_id, files, version_label, note, desc_fix=None, desc_override=None):
     """Create (or resume) a new version of a published record, upload `files`, set `version`
     and append `note` to the metadata notes, then publish. Resumes cleanly from a
     ZenodoAmbiguousFailure by finding the orphan draft `actions/newversion` already created
-    server-side, rather than creating a second one."""
+    server-side, rather than creating a second one.
+
+    `desc_fix` applies small in-place (old, new) substring substitutions to the description
+    Zenodo carried forward from the previous version — fragile if the old text must match
+    byte-for-byte. `desc_override`, if given, replaces the whole description unconditionally;
+    prefer it when the caller already has the full correct new text (e.g. from the paper's own
+    updated Zenodo-deposit script constant) rather than trying to patch the old one in place."""
     try:
         nv = call(base, token, "POST", f"/deposit/depositions/{published_id}/actions/newversion")
         d = call(base, token, "GET", nv["links"]["latest_draft"].replace(f"{base}/api", ""))
@@ -142,7 +148,9 @@ def newversion(base, token, published_id, files, version_label, note, desc_fix=N
     md = call(base, token, "GET", f"/deposit/depositions/{dep_id}")["metadata"]
     md["version"] = version_label
     md["notes"] = (md.get("notes", "") + " " + note).strip()
-    if desc_fix:
+    if desc_override:
+        md["description"] = desc_override
+    elif desc_fix:
         for a, b in desc_fix:
             md["description"] = md["description"].replace(a, b)
     call(base, token, "PUT", f"/deposit/depositions/{dep_id}", payload={"metadata": md})

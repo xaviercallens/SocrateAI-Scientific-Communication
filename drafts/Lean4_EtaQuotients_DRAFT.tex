@@ -85,7 +85,7 @@ make general-$N$ Ligozat ``moderate bookkeeping,'' and narrows the obstruction t
 remaining node rather than removing it, which we report as an addendum, not as
 a revision of the results proved here. The development is 519 declarations in 8117 lines across five
 modules, with no \lean{sorry}, pinned by axiom guards in the library's shared
-\lean{FinalCheck.lean} (797 guards in total as of this printing; see \S\ref{sec:postscript}
+\lean{FinalCheck.lean} (822 guards in total as of this printing; see \S\ref{sec:postscript}
 for why that file now also guards material outside this paper's own scope).
 \end{abstract}
 
@@ -365,10 +365,10 @@ any concrete eta-quotient at any level, requiring no Mathlib addition, though he
 kernel-checked $A1$.
 \end{remark}
 
-\section{Verification status}
+\section{Verification status}\label{sec:verification}
 
 \lean{lake build SocrateAI} --- the whole library's default target, now shared with the
-postscript's material --- completes in 3767 jobs with no errors. This paper's own development is
+postscript's material --- completes in 3768 jobs with no errors. This paper's own development is
 519 declarations in 8117 lines across five modules
 (\lean{EtaQuotient}, \lean{EtaQuotientCuspOrder}, \lean{EtaQuotientCuspTheta},
 \lean{EtaQuotientModularity}, \lean{EtaQuotientPrimeLevel}). There are no \lean{sorry} placeholders,
@@ -377,12 +377,12 @@ and the five eta modules declare no axioms. (One legacy module elsewhere in the 
 from an early scaffold; they are imported nowhere, and the enforced footprints below prove that no
 guarded theorem depends on them. An earlier version of this sentence said five --- the count came
 from a truncated listing, and is now recomputed mechanically at every build of this paper.) Following~\cite{FLT2026}, the axiom footprint is enforced rather than
-reported: \lean{FinalCheck.lean} carries 797 \texttt{\#guard\_msgs in \#print axioms} guards over
-795 distinct theorems (the library-wide total; \S\ref{sec:postscript} accounts for the material
-outside this paper's own scope), so a widened footprint is a compile error; 769 report exactly
+reported: \lean{FinalCheck.lean} carries 822 \texttt{\#guard\_msgs in \#print axioms} guards over
+820 distinct theorems (the library-wide total; \S\ref{sec:postscript} accounts for the material
+outside this paper's own scope), so a widened footprint is a compile error; 793 report exactly
 $[\texttt{propext},\ \texttt{Classical.choice},\ \texttt{Quot.sound}]$, two the strictly smaller
 $[\texttt{propext},\ \texttt{Quot.sound}]$, sixteen (definitional guards) depend on no axiom at
-all, and eight are \emph{inverted tripwires} --- guards whose EXPECTED footprint includes
+all, and nine are \emph{inverted tripwires} --- guards whose EXPECTED footprint includes
 \lean{sorryAx}, asserting that a specific, DAG-tracked open or refuted statement still depends on
 one, so that a later accidental proof of it (or a silent weakening that lets it typecheck) fails
 the build rather than passing unnoticed (\S\ref{sec:postscript}). A negative control asserting
@@ -394,7 +394,7 @@ Of the 453 theorems in the new modules, 14 (3\%) have a one-line
 earlier module in this project consisted of 174 numeral identities of which 158 were one-line, and
 carried no evidential weight; the check is now standard practice here for any large batch.
 
-The statement-dependency graph (\lean{dag/theorems.jsonl}, 74 nodes, 66 proved, acyclic ---
+The statement-dependency graph (\lean{dag/theorems.jsonl}, 80 nodes, 71 proved, acyclic ---
 library-wide, per \S\ref{sec:postscript}) is
 machine-validated: every node marked proved must name a declaration that resolves and may depend
 only on proved nodes. \textbf{The node \lean{ETA-01}, Ligozat's criterion in general, remains
@@ -546,6 +546,40 @@ while fixing others).
 \end{enumerate}
 \end{remark}
 
+\section*{A note on method: AI assistance and human responsibility}
+
+This note follows the disclosure norm argued for by Tao~\cite{Tao2026AI}, endorsing recommendations
+of the Leiden Declaration on Artificial Intelligence and Mathematics~\cite{Leiden2026}: disclose
+tool use, affirm that credit and responsibility belong to the human author, and attribute sources
+where AI tools cannot reliably do so themselves.
+
+\textbf{What AI did.} The Lean~4 formalization, the literature search, and the drafting of this
+text were produced with the assistance of large language models (Anthropic's Claude family),
+working under human direction across many sessions. The methodology is neuro-symbolic in the
+specific sense Tao describes~\cite{Tao2026AI}: natural-language reasoning proposes definitions,
+proof strategies, and prose, and the Lean kernel --- not the model, and not the author's trust in
+the model --- is what admits or rejects every mathematical claim. Every theorem in this paper
+compiles against Mathlib with its \lean{sorry} count and axiom footprint disclosed and
+build-guarded, not merely reported (\S\ref{sec:verification}); nothing here is asserted true
+because a model said so.
+
+\textbf{What the author did.} Xavier Callens set the research direction, chose what to formalize
+and in what order, judged what the results mean and whether they are worth publishing, and is
+responsible for every claim in this document, including its errors. That responsibility was
+exercised concretely, not nominally, in this paper's own history: an earlier version of
+\S\ref{sec:cusp} stated a specification that a subsequent pass found to be wrong and corrected in
+place, rather than silently; and the postscript at \S\ref{sec:postscript} records a follow-up run
+whose first, unscoped attempt reached an imprecise account of what prior art actually contained,
+which a second, narrower pass then corrected --- crediting exactly what was ported, proving
+exactly what was not, and recording both declaration by declaration rather than asserting a single
+overall claim of completeness. Tao's own test is apt: a result that cannot be explained and
+defended by its author, formally verified or not, is not ready to be called
+complete~\cite{Tao2026AI}. The mathematical content of this development --- what Ligozat's
+criterion says, why the general-$N$ case obstructs where it does (\S\ref{sec:obstruction}), and why
+the two corrections above were needed --- is something the author can explain without further AI
+assistance; the Lean proof terms that certify it were substantially AI-drafted and are trusted only
+because the kernel, not the author, checks them.
+
 \begin{thebibliography}{99}
 \bibitem{Ligozat1975} G.~Ligozat, \textit{Courbes modulaires de genre 1}, Bull.\ Soc.\ Math.\ France, M\'em.\ \textbf{43} (1975).
 \bibitem{Martin1996} Y.~Martin, \textit{Multiplicative eta-quotients}, Trans.\ Amer.\ Math.\ Soc.\ \textbf{348} (1996), 4825--4856.
@@ -559,6 +593,12 @@ while fixing others).
 \bibitem{AFPRademacher} M.~Eberl, L.~C.~Paulson, \textit{Rademacher's Series for the Partition Function}, Archive of Formal Proofs. \url{https://www.isa-afp.org/entries/Rademacher_Series.html}, formal proof development.
 \bibitem{ThisWork} X.~Callens, \textit{Eta-Quotients in Lean 4} (this preprint), Zenodo, 2026. \texttt{doi:10.5281/zenodo.22648098}.
 \bibitem{deMoura2021} L.~de~Moura et al., \textit{The Lean 4 Theorem Prover and Programming Language}, CADE-28, LNCS \textbf{12699}, Springer (2021).
+\bibitem{Tao2026AI} T.~Tao, \textit{Mathematics in the age of AI}, essay based on a lecture at the
+International Congress of Mathematicians, July 2026, submitted to the Proceedings of the ICM 2026.
+\texttt{arXiv:2608.16753}.
+\bibitem{Leiden2026} \textit{The Leiden Declaration on Artificial Intelligence and Mathematics},
+June 2, 2026, endorsed by the International Mathematical Union. \url{https://leidendeclaration.ai/},
+\texttt{doi:10.5281/zenodo.20302944}.
 \end{thebibliography}
 
 \end{document}

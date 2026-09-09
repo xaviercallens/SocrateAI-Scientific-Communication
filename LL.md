@@ -727,3 +727,22 @@ supplied in its place, and the DAG records the honest state rather than a green 
 the price of the adversarial discipline that caught it — cheaper than publishing the overclaim and
 retracting it later (LL-25's own $290 eta-quotient correction cost more after the fact than this
 run's own internal catch did before publication).
+
+## LL-35 — `paper_gate.py`'s numeric-claims check was silently hardcoded to one paper
+
+`ETA_MODULES` and the six `claims` regexes were written for the eta-quotients paper and then reused
+unconditionally for every `.tex` passed to the gate. Two failure modes followed: (1) the Fricke
+paper's "27 declarations in 291 lines" claim was checked against the *eta* modules' line/declaration
+count (519, 8117) — a guaranteed false mismatch that had nothing to do with the Fricke paper being
+wrong; (2) a paper missing one of the six claim *types* (Fricke makes no DAG-node or
+distinct-theorems claim at all) hit `gate(..., False, "claim not found in tex")` — a hard fail for
+never having made a claim, not for making a wrong one. Same root cause as LL-30 (shared script,
+single paper's assumptions baked in) one layer down: the fix there was de-duplicating scripts across
+repos, the fix here is de-duplicating the *config* across papers within one script.
+
+**Rule.** A mechanical gate shared across papers needs its per-paper inputs (which modules a line-
+count claim is about) looked up by paper identity, not hardcoded once. A claim pattern that doesn't
+match the paper's text is a **skip**, not a **fail** — only a claim that *is* made and is wrong
+should fail the gate. Applies equally to language: a page-1 review-status check written to match
+only the English phrase silently fails every translated paper; check for the target-language phrase
+too (`relecture par les pairs`), the same way the numeric-claim regexes now accept both.
