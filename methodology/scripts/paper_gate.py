@@ -125,17 +125,25 @@ def main():
          f"axiom-free={axfree}/inverted-tripwire={inverted}")
     gate("no UNEXPECTED footprint (beyond std axioms, or a disclosed sorryAx tripwire)", other == 0)
 
-    # negative controls must FAIL (guards are load-bearing).
-    # NB: `lake env lean` does not accept `--packages` (that flag is `lake build`-only; discovered
-    # the hard way — an earlier version of this gate passed it here, which made `lean` itself
-    # error out on the unrecognised flag and print --help with exit 1, so this check ALWAYS
-    # reported "fails correctly" regardless of whether the negative control's own content was
-    # actually rejected. `lake env lean` reads the .lake/build state the `lake build` step above
-    # (run with --packages) already populated, so no flag is needed here.
+    # negative controls must FAIL, FOR THE RIGHT REASON (guards are load-bearing).
+    # NB, corrected twice now (LL-27, then LL-32): `--packages` is a GLOBAL lake flag and belongs
+    # BEFORE the subcommand — `lake --packages=X env lean FILE` — not after `lean` (rejected by
+    # `lean` itself, exit 1 on the unrecognised flag) and not omitted (rejected by `lake env`
+    # itself, "object file ... does not exist", ALSO exit 1). Both wrong forms produce exit 1 for
+    # an environment reason having nothing to do with the file's content, so a bare exit-code
+    # check reports every negative control as "fails correctly" even when it is checking nothing.
+    # A second-order LL-16: verify the failure MESSAGE, not just the exit code, or a check can
+    # look green under three different invocations while never once examining what it claims to.
+    pkgs_flag = "--packages=local-packages.json " if (LEAN / "local-packages.json").exists() else ""
     for nc in sorted(glob.glob(str(LEAN / "verification/*.lean"))):
-        r = sh(f'env PATH="$HOME/.elan/bin:$PATH" lake env lean {nc}', cwd=LEAN, timeout=600)
-        gate(f"negative control fails: {pathlib.Path(nc).name}", r.returncode != 0,
-             "" if r.returncode != 0 else "SUSPICIOUS: exit 0 — re-verify this isn't the --packages bug")
+        r = sh(f'env PATH="$HOME/.elan/bin:$PATH" lake {pkgs_flag}env lean {nc}', cwd=LEAN, timeout=600)
+        out = r.stdout + r.stderr
+        env_error = "does not exist" in out and "object file" in out
+        real_guard_failure = r.returncode != 0 and not env_error
+        gate(f"negative control fails: {pathlib.Path(nc).name}", real_guard_failure,
+             "" if real_guard_failure else
+             ("ENVIRONMENT ERROR, not a guard failure — the check ran but examined nothing: " + out[-200:]
+              if env_error else f"SUSPICIOUS: exit {r.returncode}"))
 
     dag = sh(f"python3 {LEAN}/dag/check_dag.py")
     gate("DAG validator (LL-2)", "PASS" in dag.stdout, dag.stdout.strip().split("\n")[0][:80])

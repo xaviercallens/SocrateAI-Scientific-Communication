@@ -671,3 +671,59 @@ actually gets exhausted.
 - `Workflow`'s `resumeFromRunId` cache was not exercised this session (no workflow needed a
   post-edit re-run) but remains the correct move whenever one does — cached agent() calls with an
   unchanged `(prompt, opts)` replay instantly rather than re-spending their tokens.
+
+---
+
+# The T-duality/Fricke bridge run *(2026-09-09)*
+
+## LL-32 — My own fix for LL-27 was itself wrong; a second wrong fix looked identical to the first
+
+LL-27 found `lake env lean FILE --packages=X` fails (the flag placed after `lean`, which rejects
+it). The fix applied was to **remove the flag entirely**, reasoning that `lake env` reads state a
+prior `lake build --packages=X` already populated. That reasoning was wrong: `lake env` itself
+also needs `--packages` to resolve which package set it is standing up an environment for — it is
+a **global** lake flag and belongs immediately after `lake`, before the subcommand:
+`lake --packages=X env lean FILE`. Omitting it fails with "object file ... does not exist" for
+**any** file, guard-content notwithstanding — the same failure shape (exit 1, unrelated to what
+the check claims to test) as the original bug, just from the opposite direction. A workflow run
+independently discovered this by constructing a control-of-the-control: a trivially-true file
+(`example : (2:ℕ)+2=4 := rfl`) run through the un-flagged form also exited 1, proving the check had
+been evidence-free the whole time it was "fixed."
+
+**Rule.** A check that "fails correctly" is not verified by the exit code alone (LL-27 already
+said this) — and a *fix* to such a check is not verified by the exit code alone either. Confirm the
+fixed invocation distinguishes a real failure from an environment failure by inspecting the
+**message**, not just re-running it and seeing nonzero once. `paper_gate.py`'s negative-control
+gate now does this: it checks for the specific "object file ... does not exist" shape and reports
+that case as an environment error, distinct from a genuine `#guard_msgs` mismatch — verified in
+both directions before landing.
+
+## LL-33 — The adversarial Compare→Prove→Review→Verdict chain caught a real overclaim before it shipped, and a second pass found it wasn't even the right physics
+
+The T-duality bridge theorem (`TDUAL-01`) was designed, in the Blueprint phase's own words, to
+"coincide" with the Fricke involution. The Compare phase caught that the physics citation didn't
+support it at level `N > 1`. The Verdict phase went further, unprompted: it *compiled a standalone
+equivalence proof* that the bridge theorem carries zero content beyond its three inputs (a
+relabelling, not a reduction) — and then fetched a *second* primary source (Persson–Volpato,
+arXiv:1504.07260) to find that a genuine Fricke-type involution **does** appear in string theory,
+just attached to a different modulus and a different duality (S-duality on the axio-dilaton in CHL
+models) than the run was scoped to find. The workflow's own design — a dedicated adversarial review
+lens asking "is this a relabelling?", plus a Verdict phase with real tool access rather than a
+rubber-stamp summary — is what surfaced this; nothing about the finding was luck.
+
+**Rule.** For any "bridge" or "coincides with" claim connecting two previously separate
+developments, the review phase gets an explicit instruction to attempt disproof by *compiling* an
+equivalence check against the theorem's actual inputs, not by reading the prose. A relabelling and
+a reduction can have identical-looking Lean statements; only the proof term's actual dependency
+graph tells them apart.
+
+## LL-34 — A correctly-scoped obstructed result is still worth more than the workflow that produced it looks like it cost
+
+18 agents, $63 API-equivalent (measured from the run transcripts, not estimated), 2.2 hours, for a result whose headline theorem does
+**not** close. That is not a failure by this programme's own standard (LL-21, LL-25): four genuine
+sorry-free lemmas landed and are reusable (`frickeW_smul_coe` closes a real seam nothing previously
+connected), a false physics attribution was caught and corrected with the precise correct anchor
+supplied in its place, and the DAG records the honest state rather than a green light. The cost is
+the price of the adversarial discipline that caught it — cheaper than publishing the overclaim and
+retracting it later (LL-25's own $290 eta-quotient correction cost more after the fact than this
+run's own internal catch did before publication).
