@@ -1,0 +1,359 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setmonofont{DejaVu Sans Mono}[Scale=0.85]
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{xurl}
+\usepackage{hyperref}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyvrb}
+\usepackage{caption}
+\usepackage{draftwatermark}
+\SetWatermarkText{PREPRINT}
+\SetWatermarkScale{1.1}
+\SetWatermarkLightness{0.92}
+\captionsetup[figure]{name=Listing}
+\emergencystretch=5em
+\newcommand{\brk}{\discretionary{}{}{}}
+\newcommand{\lean}[1]{\ifmmode\text{\ttfamily\detokenize{#1}}\else{\ttfamily\detokenize{#1}}\fi}
+
+\definecolor{indigo}{rgb}{0.29, 0.0, 0.51}
+\definecolor{teal}{rgb}{0.0, 0.5, 0.5}
+\hypersetup{colorlinks=true, linkcolor=teal, citecolor=indigo, urlcolor=blue,
+  pdftitle={Fricke-self-dual eta-quotients (preprint)}, pdfauthor={Xavier Callens}}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{\textbf{Fricke-Self-Dual Eta-Quotients Are Eigenforms}\\[0.3em]
+  \large\textbf{A Corollary in Lean 4, and a Note on Its Motivation \\ in Persson--Volpato's CHL S-Duality}\\[0.8em]
+  \large\textcolor{BrickRed}{PREPRINT --- not peer reviewed}}
+\author{
+  Xavier Callens\thanks{Corresponding author: \texttt{callensxavier@gmail.com}} \\
+  \small SocrateAI Research Initiative
+}
+\date{\today\\[0.6em]
+  \small Archived at Zenodo: \texttt{ZENODO\_DOI\_PLACEHOLDER}}
+
+\begin{document}
+\maketitle
+
+\begin{center}
+\fbox{\begin{minipage}{0.92\textwidth}
+\small \textbf{Status.} This is a \emph{preprint}. It has \textbf{not been peer reviewed}. The
+Lean development it describes compiles and is axiom-audited --- those claims are machine-checked
+and independently reproducible --- but the \emph{exposition} has had no external referee. The
+mathematical content is a single closed corollary (Theorem~\ref{thm:main}) of an already-proved
+transformation law; the physics motivation cited in \S\ref{sec:motivation} is reported honestly as
+\emph{motivation}, not as something this paper formalizes or proves. Read the scope before citing
+the result.
+\end{minipage}}
+\end{center}
+
+\begin{abstract}
+We formalize, in Lean~4 on top of Mathlib, a corollary of an already-proved Fricke transformation
+law for eta-quotients: if the exponent vector $r$ of $f(z) = \prod_{\delta\mid N}\eta(\delta z)^{r_\delta}$
+satisfies $r_\delta = r_{N/\delta}$ for every $\delta\mid N$ (\emph{Fricke-self-duality}), then $f$
+is a genuine eigenform of the Fricke transform $z\mapsto -1/(Nz)$, with a closed-form eigenvalue
+$\lambda = i^{-k}N^{k/2}$ depending only on the level $N$ and weight $k$, not on $r$. We also prove
+exactly when $\lambda=\pm1$. The only new mathematical content is a single product identity,
+$\prod_{\delta\mid N}\delta^{r_\delta}=N^k$ on self-dual $r$; every other declaration is a direct
+substitution into the pre-existing transformation law. We report, as motivation and at the
+literature tier of this programme's epistemic ladder --- not as a formalized claim --- that this
+self-duality condition is exactly Persson and Volpato's ``balanced Frame shape,'' which they
+identify as characterizing CHL string compactifications self-dual under a Fricke-type S-duality on
+the heterotic axio-dilaton modulus. We state precisely where their normalization and ours
+diverge, so the two are not conflated.
+\end{abstract}
+
+\noindent\textbf{MSC 2020:} 11F11, 11F20, 68V20.\quad
+\textbf{Keywords:} eta-quotients, Fricke involution, eigenforms, Lean 4, Mathlib, formal
+verification, CHL models.
+
+\section{Introduction}\label{sec:introduction}
+
+A companion development in this programme, \emph{A Mathlib-Idiomatic Formalization of the Fricke
+Involution}~\cite{Fricke2026}, formalizes the matrix-level Fricke involution $W_N$ on
+$\Gamma_0(N)$, and a second, \emph{Eta-Quotients in Lean 4}~\cite{EtaQuotients2026}, formalizes the
+transformation law of eta-quotients under $W_N$: for $f(z)=\prod_{\delta\mid N}\eta(\delta
+z)^{r_\delta}$ of weight $k$ (i.e.\ $\sum_{\delta\mid N} r_\delta = 2k$),
+\begin{equation}\label{eq:etaQuotient_fricke}
+  f\!\left(\frac{-1}{Nz}\right) \;=\; i^{-k}N^k\Bigl(\sqrt{\textstyle\prod_{\delta\mid N}\delta^{r_\delta}}\Bigr)^{-1} z^k \, f^\ast(z),
+\end{equation}
+where $f^\ast$ is the \emph{dual} quotient, exponent vector $\delta\mapsto r_{N/\delta}$. This is
+\lean{etaQuotient_fricke} (tag \texttt{F3.2-A7}), already proved, sorry-free, in
+\texttt{EtaQuotientModularity.lean}. In general $f^\ast\neq f$: \lean{fricke_dual_pin} in that
+module exhibits an $r$ whose dual is a genuinely different function.
+
+This note asks the natural next question: what happens when $f^\ast=f$? Equation
+\eqref{eq:etaQuotient_fricke} then collapses to a genuine eigenform relation, with an eigenvalue
+depending only on $N$ and $k$. That collapse is short --- a substitution and a simplification, not
+a fresh derivation --- and its only nontrivial ingredient is one product identity
+(Lemma~\ref{lem:prod-collapse}). We formalize it, together with a closed characterization of when
+the eigenvalue is exactly $\pm1$, and we record, honestly and at arm's length, why the question was
+worth asking: the self-duality condition on $r$ is exactly the combinatorial shape of a
+condition in the physics literature that this paper does not attempt to derive.
+
+\section{The self-duality condition}
+
+\begin{definition}[Fricke-self-dual exponent vector]\label{def:selfdual}
+\lean{IsFrickeSelfDual}. For $N>0$ and an exponent vector $r:\mathbb{N}\to\mathbb{Z}$,
+\[
+  \mathrm{IsFrickeSelfDual}(N,r) \;:\Longleftrightarrow\; \forall\, \delta\mid N,\ r_\delta = r_{N/\delta}.
+\]
+\end{definition}
+
+We call this condition \emph{self-dual} (equivalently \emph{Fricke-symmetric}), never
+``balanced.'' \texttt{EtaQuotientModularity.lean} already uses ``balanced'' for an unrelated
+concept --- \lean{exists_balanced_add}, tag \texttt{F3.2-B1}, the \lean{Int.bmod}
+balanced-remainder-division step used in the $\Gamma_0(N)$ generator descent --- and the physics
+literature discussed in \S\ref{sec:motivation} uses ``balanced'' for a third, related but
+distinct, sense. Reusing the word here would collide with both. \lean{IsFrickeSelfDual} is
+\lean{Decidable} (\lean{decidableIsFrickeSelfDual}), so membership can be checked by
+\lean{decide} on concrete instances, which every pin in the development below does.
+
+\begin{lemma}[The product collapses to a level power]\label{lem:prod-collapse}
+\lean{prod_zpow_selfDual}. For $N>0$, $r$ self-dual on $N$, and $\sum_{\delta\mid N} r_\delta=2k$,
+\[
+  \prod_{\delta\mid N} \delta^{r_\delta} \;=\; N^k.
+\]
+\end{lemma}
+
+This is the only place the self-duality hypothesis does real work beyond a substitution: it forces
+the divisor-weighted product of the exponents to collapse to a single power of the level, which is
+what removes $r$ from the eigenvalue entirely. It was checked, independently of the Lean proof, in
+exact rational arithmetic over four ranges (up to $1\le N\le 60$, exponents in $[-4,4]$,
+$671504$ self-dual instances), zero mismatches, and against $9597$ non-self-dual even-weight
+vectors of which $98.8\%$ violate the identity --- confirming self-duality is load-bearing for the
+collapse, not an artifact of the weight condition alone.
+
+\section{The eigenform relation}
+
+\begin{definition}[Fricke eigenvalue]\label{def:eigenvalue}
+\lean{frickeEigenvalue}. For $N>0$ and $k\in\mathbb{Z}$,
+\[
+  \lambda(N,k) \;:=\; i^{-k}\sqrt{N^{k}}.
+\]
+\end{definition}
+
+\begin{theorem}[Self-dual eta-quotients are Fricke eigenforms]\label{thm:main}
+\lean{etaQuotient_fricke_selfDual}. For $N>0$, $r$ self-dual on $N$, $\sum_{\delta\mid N}
+r_\delta=2k$, and $z$ in the open upper half-plane,
+\[
+  f\!\left(\frac{-1}{Nz}\right) \;=\; \lambda(N,k)\, z^k\, f(z), \qquad f(z)=\prod_{\delta\mid N}\eta(\delta z)^{r_\delta}.
+\]
+\end{theorem}
+
+The proof is two rewrites: substitute \eqref{eq:etaQuotient_fricke}'s dual quotient
+$f^\ast$ by $f$ itself (Definition~\ref{def:selfdual} makes this a congruence over the divisor
+product, \lean{etaQuotient_congr_divisors}), then collapse the constant using
+Lemma~\ref{lem:prod-collapse} (\lean{fricke_const_selfDual}). Nothing else enters. An
+intermediate, unnormalized form retaining $\sqrt{\prod\delta^{r_\delta}}$ rather than $\lambda$ is
+\lean{etaQuotient_fricke_selfDual_raw}; a normalized form isolating the root of unity
+$i^{-k}$ on one side is \lean{etaQuotient_fricke_selfDual_normalized}.
+
+\begin{remark}[What this is not]\label{rem:not-modularity}
+Theorem~\ref{thm:main} makes no reference to $\Gamma_0(N)$, to cusp conditions, or to the bundled
+type $M_k(\Gamma_0(N))$: it is a statement about one function value at one point,
+$-1/(Nz)$, transported from the already-proved general transformation law. Calling
+$\lambda(N,k)$ ``the eigenvalue of the Fricke operator $W_N$ on $M_k(\Gamma_0(N))$'' would overstate
+what is proved here; the correct reading is that $f$ is an eigenvector of the single linear map
+$g\mapsto g(-1/(Nz))$ restricted to functions of this shape.
+\end{remark}
+
+\subsection{When is the eigenvalue $\pm1$?}
+
+The eigenvalue's dependence on $N$ and $k$ alone makes an exact characterization of
+$\lambda=\pm1$ reachable without further hypotheses on $r$.
+
+\begin{theorem}[Modulus, and the sign criteria]\label{thm:pm1}
+For $N>0$ and $k\in\mathbb{Z}$:
+\begin{align}
+\|\lambda(N,k)\| &= \sqrt{N^{k}} \tag{\lean{frickeEigenvalue_norm}}\\
+\lambda(N,k)=1 &\iff 4\mid k \ \wedge\ (N=1 \vee k=0) \tag{\lean{frickeEigenvalue_eq_one_iff}}\\
+\lambda(N,k)=-1 &\iff k\bmod 4 = 2 \ \wedge\ N=1 \tag{\lean{frickeEigenvalue_eq_neg_one_iff}}
+\end{align}
+\end{theorem}
+
+\begin{corollary}[$\pm1$ in terms of the weight sum]\label{cor:pm1-weight}
+\lean{frickeEigenvalue_pm_one_iff}. For $N>0$, $r$ self-dual, $\sum_{\delta\mid N} r_\delta=2k$,
+\[
+  \lambda(N,k)\in\{1,-1\} \iff 4 \Bigm| \textstyle\sum_{\delta\mid N} r_\delta \ \wedge\ \bigl(N=1 \vee \sum_{\delta\mid N} r_\delta = 0\bigr).
+\]
+\end{corollary}
+
+Theorem~\ref{thm:pm1} rests on two independent arithmetic facts, each proved and pinned on its own
+before being combined: the periodicity of $i^{k}\bmod 4$ (\lean{I_zpow_emod}, genuinely new ---
+Mathlib's own \lean{Complex.I_pow_eq_pow_mod} is stated only for $\mathbb{N}$-exponents, not
+$\mathbb{Z}$), and $(N:\mathbb{R})^k=1 \iff (N=1\vee k=0)$ for $N>0$
+(\lean{natCast_zpow_eq_one_iff}). Every pinned instance in both theorems is checked twice, by the
+general lemma and by an independent hand computation sharing no lemma with it; the informative
+instances are the ones where a naive guess would be wrong --- e.g.\ $(N,k)=(6,2)$, where $4\mid k$
+fails but $k\bmod 4=2$ holds and $\lambda\neq -1$ only because $N\neq1$, the case that most directly
+tests whether the level condition was dropped by accident.
+
+\section{Verification status}\label{sec:verification}
+
+The development is 333 declarations in 6437 lines, in one new module,
+\texttt{EtaQuotient\brk FrickeSelfDual.lean}, imported into the library's default build target. It is
+entirely \lean{sorry}-free: 24 statement-graph nodes (two definitions, sixteen general lemmas and
+characterizations, five worked eigenvalue pins cross-checked against a $q$-product evaluation of
+$\eta$, and one statement-shape guard), all \texttt{proved}, none blocked, none open. 299 of the
+333 declarations carry a build-failing \lean{\#guard\_msgs in \#print axioms} guard reporting
+exactly \lean{[propext, Classical.choice, Quot.sound]}; the remainder are the pure data
+definitions (the pinned exponent vectors) and auxiliary lemmas that a guard would not
+strengthen. \lean{lake build SocrateAI} --- the whole library's shared default target, now also
+carrying this module's guards --- completes in 3769 jobs with no errors.
+
+Every headline theorem was checked, independently of its Lean proof, against a direct
+$q$-product evaluation of the Dedekind eta function (a 600-term truncation, three points per
+instance, relative error $\le 1.8\times10^{-14}$), and Theorem~\ref{thm:main}'s $N=1$,
+$r\equiv24$, $k=12$ instance reproduces \lean{eta_S_via_fricke}, itself independently re-derived
+from Mathlib's own \lean{discriminant_S_invariant}. Kernel proof terms were inspected directly
+(\lean{\#print}) to confirm the headline theorems are genuine substitutions into
+\lean{etaQuotient_fricke} rather than restatements that merely typecheck: each reduces to at most
+two \lean{rw} steps plus \lean{ring}.
+
+The statement-dependency graph (\lean{dag/theorems.jsonl}) validates: 104 nodes, 95 proved,
+acyclic. No axiom beyond Lean's three standard axioms and the library's six pre-existing,
+disclosed \lean{physics\_postulate\_$i$} placeholders (unused by anything proved here) is declared
+anywhere in the library.
+
+\section{Motivation: Persson--Volpato's Fricke S-duality in CHL models}\label{sec:motivation}\label{sec:selfdual-pointer}
+
+\textbf{Nothing in this section is formalized. Nothing in \S\S\ref{def:selfdual}--\ref{sec:verification} names or
+depends on any object introduced here.} We report the motivation for asking the question in the
+first place, at the literature (L) tier of this programme's epistemic ladder, because the
+disclosure norm this programme follows~\cite{Tao2026AI,Leiden2026} requires attributing sources
+plainly rather than letting a formal artifact imply more provenance than it has.
+
+Persson and Volpato~\cite{PerssonVolpato2015} study CHL compactifications --- orbifolds of the
+heterotic string (equivalently, by string duality, of type~IIA on $K3\times T^2$) by an order-$N$
+symmetry $g$ --- and attach to $g$ a \emph{generalized Frame shape}
+$g\leftrightarrow\prod_{a\mid N}a^{m(a)}$, an exponent vector on the divisors of $N$, constrained
+by $\sum_{a\mid N}m(a)\cdot a=24$ (their eq.~1.4, recording a $24$-dimensional representation).
+They call the Frame shape \emph{balanced} (their eq.~1.6) when $m(N/a)=m(a)$ for all $a\mid N$ ---
+exactly Definition~\ref{def:selfdual}, read on their exponent vector --- and their headline result
+(their \S1.1, \S3) is that a CHL model is self-dual under a Fricke S-duality $S\mapsto -1/(NS)$ on
+the heterotic axio-dilaton modulus $S$ precisely when its Frame shape is balanced. That
+identification is established by physical arguments this Lean library does not
+contain and this note does not attempt: charge-lattice $N$-modularity, Conway-group
+representation theory on the $24$-dimensional representation, and Witten-index/BPS-state counting.
+
+\begin{remark}[Two normalizations that must not be merged]\label{rem:normalization}
+Persson--Volpato's weight constraint $\sum_{a\mid N}m(a)\cdot a=24$ is \emph{not} the eta-quotient
+weight normalization $\sum_{\delta\mid N}r_\delta=2k$ used throughout this paper. The two agree
+only at $N=1$. Their canonical balanced shape at $N=2$, $1^8 2^8$, satisfies $\sum a\cdot m(a) =
+8+16=24$ but $\sum m(a)=16$, i.e.\ weight $8$, not $12$ (checked this session over
+$1^k N^k$, $k=24/(1+N)$, for $N\in\{1,2,3,5,7,11,23\}$). A reader translating between the two
+literatures must carry the exponent vector's actual weight, not assume weight $12$ throughout.
+\end{remark}
+
+The modulus $S$ in Persson--Volpato is the heterotic axio-dilaton, not the $T^2$
+complex-structure modulus $\tau$ that a companion negative result in this
+programme~\cite{Fricke2026} investigated and found \emph{not} supported, at level $N>1$, by the
+natural T-duality reference (Giveon--Porrati--Rabinovici). That the same Fricke matrix
+$W_N=\left(\begin{smallmatrix}0&-1\\N&0\end{smallmatrix}\right)$ recurs attached to a
+\emph{different} modulus in a correctly-sourced reference, while failing to attach to the
+$T^2$ modulus in an incorrectly-sourced one, is exactly the distinction that negative result was
+designed to surface, and this note's citation discipline is a direct continuation of it: cite the
+source that actually supports the specific claim being motivated, not the source that merely
+mentions a similar-looking matrix.
+
+\section{Related work}\label{sec:related}
+
+Martin~\cite{Martin1996} gives the classical account of Fricke and Atkin--Lehner eigenvalue
+multiplicativity for eta-quotients; Theorem~\ref{thm:main} is the special case of that classical
+picture reachable directly from the already-proved general transformation law, stated and checked
+in Lean rather than re-derived. \lean{etaQuotient_fricke}
+(\S\ref{sec:introduction})\cite{EtaQuotients2026} supplies the general law this note specializes;
+\cite{Fricke2026} supplies the matrix-level Fricke involution $W_N$ that both eta-quotient papers'
+transformation laws are ultimately stated relative to, and its own T-duality negative result is the
+direct precedent for this note's citation discipline in \S\ref{sec:motivation}.
+
+\section{Limitations}\label{sec:limitations}
+
+\begin{remark}[What is not done here]
+\leavevmode
+\begin{enumerate}[label=(\alph*)]
+  \item No connection to $\Gamma_0(N)$-modularity, cusp behaviour, or the bundled type
+    $M_k(\Gamma_0(N))$ is made (Remark~\ref{rem:not-modularity}).
+  \item The physics claim motivating this note (\S\ref{sec:motivation}) is not formalized, is not
+    attempted here, and should not be inferred from the Lean content.
+  \item $\lambda(0,k)=0$ is junk (the definition is total but the hypothesis $N>0$ is required by
+    every theorem that uses it); no theorem here relies on or claims anything about $N=0$.
+  \item The characterization of $\lambda=\pm1$ (Theorem~\ref{thm:pm1}) is complete for the
+    eigenvalue itself, but Corollary~\ref{cor:pm1-weight} inherits the self-duality
+    \emph{hypothesis} on $r$ --- it does not characterize which exponent vectors are self-dual, a
+    separate combinatorial question this note does not address beyond
+    Definition~\ref{def:selfdual}'s decidability.
+\end{enumerate}
+\end{remark}
+
+\section{Conclusion}
+
+We have formalized, in Lean~4, that a Fricke-self-dual eta-quotient is an eigenform of the Fricke
+transform, with a closed-form eigenvalue depending only on level and weight, and exactly when that
+eigenvalue is $\pm1$. The mathematics is a short, honest corollary of an already-proved
+transformation law; its interest is less in the difficulty of the proof than in the fact that the
+same combinatorial condition organizes a physical duality in the CHL string-compactification
+literature, reported here strictly as motivation, with the two literatures' differing
+normalizations stated explicitly so they cannot be silently conflated.
+
+\section*{A note on method: AI assistance and human responsibility}
+
+This note follows the disclosure norm argued for by Tao~\cite{Tao2026AI}, endorsing recommendations
+of the Leiden Declaration on Artificial Intelligence and Mathematics~\cite{Leiden2026}: disclose
+tool use, affirm that credit and responsibility belong to the human author, and attribute sources
+where AI tools cannot reliably do so themselves.
+
+\textbf{What AI did.} The Lean~4 formalization, the literature search, and the drafting of this
+text were produced with the assistance of large language models (Anthropic's Claude family),
+working under human direction across multiple sessions. The methodology is neuro-symbolic in the
+specific sense Tao describes~\cite{Tao2026AI}: natural-language reasoning proposes definitions,
+proof strategies, and prose, and the Lean kernel --- not the model, and not the author's trust in
+the model --- is what admits or rejects every mathematical claim. Every theorem in this paper
+compiles against Mathlib with no \lean{sorry} and a build-failing axiom guard on its footprint
+(\S\ref{sec:verification}); nothing here is asserted true because a model said so.
+
+\textbf{What the author did.} Xavier Callens set the research direction --- choosing this
+specialization specifically because it was reachable from already-proved machinery rather than
+requiring a fresh physics-bridge attempt, after a companion run in this programme found such an
+attempt correctly refused~\cite{Fricke2026} --- judged what the result means and whether it is
+worth publishing, and is responsible for every claim in this document, including its errors. The
+physics/mathematics boundary in \S\ref{sec:motivation} was treated as a hard constraint on the
+formalization itself, not merely on the prose: no Lean declaration in this development names or
+depends on any physical object, verified by direct inspection and independently re-verified by an
+adversarial review pass. Tao's own test is apt: a result that cannot be explained and defended by
+its author, formally verified or not, is not ready to be called complete~\cite{Tao2026AI}. The
+mathematical content here --- why self-duality collapses the product, and why the two
+normalizations in \S\ref{sec:motivation} diverge --- is something the author can explain without
+further AI assistance; the Lean proof terms that certify it were substantially AI-drafted and are
+trusted only because the kernel, not the author, checks them.
+
+\begin{thebibliography}{99}
+\bibitem{Fricke2026} X.~Callens, \textit{A Mathlib-Idiomatic Formalization of the Fricke Involution
+and its Operator on Modular Forms}, Zenodo, 2026. \texttt{doi:10.5281/zenodo.22542571}.
+\bibitem{EtaQuotients2026} X.~Callens, \textit{Eta-Quotients in Lean 4: Cusp Orders at Every Cusp,
+Ligozat's Criterion at Small Level, and a Named Obstruction at General Level}, Zenodo, 2026.
+\texttt{doi:10.5281/zenodo.22648098}.
+\bibitem{Martin1996} Y.~Martin, \textit{Multiplicative eta-quotients}, Trans.\ Amer.\ Math.\ Soc.\ \textbf{348} (1996), 4825--4856.
+\bibitem{PerssonVolpato2015} D.~Persson, R.~Volpato, \textit{Fricke S-duality in CHL models}, JHEP \textbf{12} (2015) 156. \texttt{arXiv:1504.07260}.
+\bibitem{Mathlib2020} The mathlib Community, \textit{The Lean mathematical library}, Proceedings of the 9th ACM SIGPLAN International Conference on Certified Programs and Proofs (CPP), 2020.
+\bibitem{deMoura2021} L.~de~Moura et al., \textit{The Lean 4 Theorem Prover and Programming Language}, CADE-28, LNCS \textbf{12699}, Springer (2021).
+\bibitem{Tao2026AI} T.~Tao, \textit{Mathematics in the age of AI}, essay based on a lecture at the
+International Congress of Mathematicians, July 2026, submitted to the Proceedings of the ICM 2026.
+\texttt{arXiv:2608.16753}.
+\bibitem{Leiden2026} \textit{The Leiden Declaration on Artificial Intelligence and Mathematics},
+June 2, 2026, endorsed by the International Mathematical Union. \url{https://leidendeclaration.ai/},
+\texttt{doi:10.5281/zenodo.20302944}.
+\end{thebibliography}
+
+\end{document}

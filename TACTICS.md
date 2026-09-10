@@ -34,6 +34,9 @@ by an agent each time).
 | 29 | Cache-read is 55-65% of cost, not output | Fork or split-session for anything long/exploratory | [S] publication skill; PUBLICATION_STRATEGY.md |
 | 30 | A fix wasn't copied to a sibling script; the second incident hit it | Extract shared modules BEFORE a second near-duplicate ships | [T] `scripts/zenodo_common.py` |
 | 35 | `paper_gate.py`'s numeric-claims check was hardcoded to one paper (modules + English-only phrasing) | Per-paper module lookup; absent claim = skip not fail; check target-language phrasing too | [T] `scripts/paper_gate.py` (`MODULES_BY_STEM`, FR claim regexes, `relecture par les pairs`) |
+| 36 | — (paper 4 proved 24/24, no OBSTRUCTED, by scoping to what already-proved machinery reaches) | Blueprint prefers a self-contained math specialization over a fresh physics bridge when both are on the table | [S] Blueprint-phase instructions in each `*-run.js` workflow script |
+| 37 | A ~70-min workflow outlived the CLI session's auth token; every post-Statements agent failed "Login expired" | Resume via `resumeFromRunId`, never a fresh launch, on that failure signature | [T] `Workflow({resumeFromRunId})` cache replay |
+| 38 | Zenodo 504'd on every call, including an unauthenticated GET to the bare domain (real outage) | Non-GET failures still raise `ZenodoAmbiguousFailure`; re-poll with a safe GET, never blind-retry or `--force` | [T] `scripts/zenodo_common.py` (`call`, `ZenodoAmbiguousFailure`) |
 
 ## The invariant
 

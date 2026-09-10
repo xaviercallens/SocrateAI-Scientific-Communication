@@ -11,14 +11,25 @@ import argparse, glob, json, pathlib, re, subprocess, sys, unicodedata
 
 LEAN = pathlib.Path("/home/xavkal/xdev/SocrateAI-Lean-Lib")
 MATHLIB = pathlib.Path("/home/xavkal/xdev/SocrateAI-Scientific-Measure/lean/.lake/packages/mathlib/Mathlib")
-ETA_MODULES = sorted(glob.glob(str(LEAN / "Lean/SocrateAI/ModularForms/EtaQuotient*.lean")))
-FRICKE_MODULES = sorted(glob.glob(str(LEAN / "Lean/SocrateAI/ModularForms/Fricke*.lean")))
+MF = LEAN / "Lean/SocrateAI/ModularForms"
+# EXPLICIT file lists, not globs (LL-35 root cause: a glob like "EtaQuotient*.lean" silently
+# absorbs any future file with that prefix — e.g. EtaQuotientFrickeSelfDual.lean, whose content
+# belongs to a DIFFERENT paper's own module count — inflating an unrelated paper's claim the
+# moment such a file is added. A paper's own "N declarations in M lines" claim is about a FIXED
+# set of files named in its own Artifact section; that set only grows when a human edits it here).
+ETA_MODULES = [str(MF / f) for f in
+    ["EtaQuotient.lean", "EtaQuotientCuspOrder.lean", "EtaQuotientCuspTheta.lean",
+     "EtaQuotientModularity.lean", "EtaQuotientPrimeLevel.lean"]]
+FRICKE_MODULES = [str(MF / f) for f in
+    ["FrickeInvolution.lean", "FrickeSlash.lean", "FrickeModular.lean", "FrickeComposite.lean"]]
+SELFDUAL_MODULES = [str(MF / "EtaQuotientFrickeSelfDual.lean")]
 # Which artifact modules a paper's "N declarations in M lines" claim is about, keyed by tex stem
 # prefix (LL-30-style drift already bit us once: this used to be ETA_MODULES unconditionally).
 MODULES_BY_STEM = {
     "Lean4_EtaQuotients_DRAFT": ETA_MODULES,
     "Lean4_Fricke_Involution": FRICKE_MODULES,
     "Lean4_Involution_Fricke_FR": FRICKE_MODULES,
+    "Lean4_FrickeSelfDual_EtaQuotients": SELFDUAL_MODULES,
 }
 # Whole-library axioms that are KNOWN, disclosed in the paper, and provably unused (LL-22 rule 3).
 AXIOM_ALLOWLIST = {f"physics_postulate_{i}" for i in range(1, 7)}

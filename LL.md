@@ -746,3 +746,50 @@ match the paper's text is a **skip**, not a **fail** — only a claim that *is* 
 should fail the gate. Applies equally to language: a page-1 review-status check written to match
 only the English phrase silently fails every translated paper; check for the target-language phrase
 too (`relecture par les pairs`), the same way the numeric-claim regexes now accept both.
+
+## LL-36 — Paper 4 (self-dual eta-quotients) proved 24/24, first try, at ~2% the T-duality run's proving risk
+
+The Blueprint deliberately chose a target reachable from already-proved machinery
+(`etaQuotient_fricke`) rather than a fresh physics-bridge attempt. Result: 24/24 DAG nodes proved
+sorry-free in one pass (no blocked nodes, no OBSTRUCTED verdict needed), the physics/math boundary
+held (verified three independent ways by the Guard and Review phases — zero forbidden physics
+vocabulary in any Lean declaration), and the only genuinely new mathematics was one product
+identity (`prod_zpow_selfDual`). Contrast LL-33/LL-34's T-duality run: 4/5 proved, one correctly
+refused, real proving risk throughout.
+
+**Rule.** When a Blueprint phase can choose between "attempt the physics bridge" and "prove the
+purely mathematical specialization that the physics motivates," scope to the latter first if it
+stands on its own as a result — it is cheaper, lower-risk, and does not foreclose a later, separate,
+explicitly-scoped bridge attempt. The two are not in tension: this run's paper cites the T-duality
+negative result's own citation discipline as direct precedent (\S\ref{sec:motivation}), rather than
+repeating the mistake LL-33 caught.
+
+## LL-37 — A ~70-minute workflow run can outlive the CLI session's auth token
+
+The self-dual-eta-quotients workflow's GateZero/Blueprint/Statements phases (4 agents) completed
+normally; every subsequent agent (Compare x24, Prove, Guard, Review x2, Verdict — 28 agents) failed
+with "Login expired — Please run /login" mid-run. `Workflow({resumeFromRunId})` replayed the three
+completed phases from cache instantly and the remainder ran clean on retry — no work was lost, but
+it cost a full second pass's wall-clock wait.
+
+**Rule.** Long-running workflows (build-heavy Prove loops especially) are not immune to session-
+level auth expiry independent of anything in the workflow's own logic. `resumeFromRunId` is the
+correct recovery — never re-launch fresh (it would re-run and re-bill the completed phases). If a
+completion notification reports every post-Statements agent failing on the same "Login expired"
+message, that is the signature to recognize, not a content/logic bug to debug.
+
+## LL-38 — Zenodo outages happen; retries must still obey LL-24's ambiguous-failure discipline
+
+Mid-publish, Zenodo returned 504 on every call for an extended period — including a plain
+unauthenticated GET to the bare domain, confirming a real outage rather than a token/rate-limit
+issue specific to this programme's calls. `zenodo_common.call()`'s existing retry/backoff (LL-24)
+degraded correctly: GETs retried and then surfaced the failure; the one non-GET (`POST
+/deposit/depositions`) raised `ZenodoAmbiguousFailure` rather than silently retrying, exactly as
+designed, and a follow-up GET (`list depositions`) was used to check for an orphan draft before
+deciding whether to retry — the outage made the GET itself fail too, so the check could not
+complete, and no blind retry was issued while that was true.
+
+**Rule.** An outage is not a reason to relax the ambiguous-non-GET discipline — if anything it is
+exactly when a blind retry would be most likely to create a duplicate deposition once the service
+recovers (a queued/delayed request landing after a naive retry already succeeded). Wait and re-poll
+with a safe GET; do not fall back to `--force`-style bypasses.

@@ -368,7 +368,9 @@ kernel-checked $A1$.
 \section{Verification status}\label{sec:verification}
 
 \lean{lake build SocrateAI} --- the whole library's default target, now shared with the
-postscript's material --- completes in 3768 jobs with no errors. This paper's own development is
+postscript's material, a follow-up T-duality module, and a follow-up self-dual eta-quotient module
+(\lean{EtaQuotientFrickeSelfDual.lean}, reported separately~\cite{FrickeSelfDual2026}) ---
+completes in 3769 jobs with no errors. This paper's own development is
 519 declarations in 8117 lines across five modules
 (\lean{EtaQuotient}, \lean{EtaQuotientCuspOrder}, \lean{EtaQuotientCuspTheta},
 \lean{EtaQuotientModularity}, \lean{EtaQuotientPrimeLevel}). There are no \lean{sorry} placeholders,
@@ -377,11 +379,11 @@ and the five eta modules declare no axioms. (One legacy module elsewhere in the 
 from an early scaffold; they are imported nowhere, and the enforced footprints below prove that no
 guarded theorem depends on them. An earlier version of this sentence said five --- the count came
 from a truncated listing, and is now recomputed mechanically at every build of this paper.) Following~\cite{FLT2026}, the axiom footprint is enforced rather than
-reported: \lean{FinalCheck.lean} carries 822 \texttt{\#guard\_msgs in \#print axioms} guards over
-820 distinct theorems (the library-wide total; \S\ref{sec:postscript} accounts for the material
-outside this paper's own scope), so a widened footprint is a compile error; 793 report exactly
-$[\texttt{propext},\ \texttt{Classical.choice},\ \texttt{Quot.sound}]$, two the strictly smaller
-$[\texttt{propext},\ \texttt{Quot.sound}]$, sixteen (definitional guards) depend on no axiom at
+reported: \lean{FinalCheck.lean} carries 1122 \texttt{\#guard\_msgs in \#print axioms} guards over
+1120 distinct theorems (the library-wide total; \S\ref{sec:postscript} accounts for the material
+outside this paper's own scope), so a widened footprint is a compile error; 1080 report exactly
+$[\texttt{propext},\ \texttt{Classical.choice},\ \texttt{Quot.sound}]$, four the strictly smaller
+$[\texttt{propext},\ \texttt{Quot.sound}]$, twenty-seven (definitional guards) depend on no axiom at
 all, and nine are \emph{inverted tripwires} --- guards whose EXPECTED footprint includes
 \lean{sorryAx}, asserting that a specific, DAG-tracked open or refuted statement still depends on
 one, so that a later accidental proof of it (or a silent weakening that lets it typecheck) fails
@@ -394,7 +396,7 @@ Of the 453 theorems in the new modules, 14 (3\%) have a one-line
 earlier module in this project consisted of 174 numeral identities of which 158 were one-line, and
 carried no evidential weight; the check is now standard practice here for any large batch.
 
-The statement-dependency graph (\lean{dag/theorems.jsonl}, 80 nodes, 71 proved, acyclic ---
+The statement-dependency graph (\lean{dag/theorems.jsonl}, 104 nodes, 95 proved, acyclic ---
 library-wide, per \S\ref{sec:postscript}) is
 machine-validated: every node marked proved must name a declaration that resolves and may depend
 only on proved nodes. \textbf{The node \lean{ETA-01}, Ligozat's criterion in general, remains
@@ -593,6 +595,9 @@ because the kernel, not the author, checks them.
 \bibitem{AFPRademacher} M.~Eberl, L.~C.~Paulson, \textit{Rademacher's Series for the Partition Function}, Archive of Formal Proofs. \url{https://www.isa-afp.org/entries/Rademacher_Series.html}, formal proof development.
 \bibitem{ThisWork} X.~Callens, \textit{Eta-Quotients in Lean 4} (this preprint), Zenodo, 2026. \texttt{doi:10.5281/zenodo.22648098}.
 \bibitem{deMoura2021} L.~de~Moura et al., \textit{The Lean 4 Theorem Prover and Programming Language}, CADE-28, LNCS \textbf{12699}, Springer (2021).
+\bibitem{FrickeSelfDual2026} X.~Callens, \textit{Fricke-Self-Dual Eta-Quotients Are Eigenforms: A
+Corollary in Lean 4, and a Note on Its Motivation in Persson--Volpato's CHL S-Duality}, Zenodo,
+2026. \texttt{doi:ZENODO\_DOI\_PLACEHOLDER}.
 \bibitem{Tao2026AI} T.~Tao, \textit{Mathematics in the age of AI}, essay based on a lecture at the
 International Congress of Mathematicians, July 2026, submitted to the Proceedings of the ICM 2026.
 \texttt{arXiv:2608.16753}.
