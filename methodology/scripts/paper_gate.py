@@ -30,6 +30,7 @@ MODULES_BY_STEM = {
     "Lean4_Fricke_Involution": FRICKE_MODULES,
     "Lean4_Involution_Fricke_FR": FRICKE_MODULES,
     "Lean4_FrickeSelfDual_EtaQuotients": SELFDUAL_MODULES,
+    "Lean4_FrickeSelfDual_EtaQuotients_FR": SELFDUAL_MODULES,
 }
 # Whole-library axioms that are KNOWN, disclosed in the paper, and provably unused (LL-22 rule 3).
 AXIOM_ALLOWLIST = {f"physics_postulate_{i}" for i in range(1, 7)}
@@ -229,6 +230,7 @@ def main():
         r"(\d+) distinct theorems": ("distinct guarded",),
         r"(\d+) report exactly": ("std-axiom guards",),
         r"(\d+) nodes, (\d+) proved": ("DAG nodes", "DAG proved"),
+        r"(\d+) n(?:\\oe\{\}|œ)uds,\s+(\d+)\s+d[ée]montr[ée]s": ("DAG nodes", "DAG proved"),
     }
     for pat, keys in claims.items():
         m = re.search(pat, tex)
